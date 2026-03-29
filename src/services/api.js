@@ -149,84 +149,47 @@ export const authAPI = {
 
 // Orders API
 export const ordersAPI = {
-  async getOrders(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return apiRequest(`/orders${queryString ? `?${queryString}` : ''}`);
-  },
-
-  async createOrder(order) {
-    return apiRequest('/orders', {
-      method: 'POST',
-      body: JSON.stringify(order),
-    });
-  },
-
-  async updateOrder(id, order) {
-    return apiRequest(`/orders/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(order),
-    });
-  },
-
-  async deleteOrder(id) {
-    return apiRequest(`/orders/${id}`, {
-      method: 'DELETE',
-    });
+  async getEligibleOrders(date = new Date().toISOString().split('T')[0]) {
+    return apiRequest(`/orders/eligible?date=${date}`);
   },
 
   async bulkUpload(orders) {
-    return apiRequest('/orders/bulk', {
+    return apiRequest('/orders/upload-text', {
       method: 'POST',
       body: JSON.stringify({ orders }),
     });
   },
+
+  async resetOrders() {
+    return apiRequest('/orders/reset', { method: 'DELETE' });
+  }
 };
 
 // Routes API
 export const routesAPI = {
   async getRoutes(params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return apiRequest(`/routes${queryString ? `?${queryString}` : ''}`);
-  },
-
-  async createRoute(route) {
-    return apiRequest('/routes', {
-      method: 'POST',
-      body: JSON.stringify(route),
-    });
-  },
-
-  async updateRoute(id, route) {
-    return apiRequest(`/routes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(route),
-    });
-  },
-
-  async deleteRoute(id) {
-    return apiRequest(`/routes/${id}`, {
-      method: 'DELETE',
-    });
+    return apiRequest(`/orders/get-routes${queryString ? `?${queryString}` : ''}`);
   },
 
   async optimizeRoutes(params) {
-    return apiRequest('/routes/optimize', {
+    return apiRequest('/orders/generate-routes', {
       method: 'POST',
       body: JSON.stringify(params),
     });
   },
 
   async assignDriver(routeId, driverId) {
-    return apiRequest(`/routes/${routeId}/assign`, {
+    return apiRequest('/orders/assign-driver', {
       method: 'POST',
-      body: JSON.stringify({ driverId }),
+      body: JSON.stringify({ route_id: routeId, driver_id: driverId }),
     });
   },
 
-  async updateRouteStatus(routeId, status) {
-    return apiRequest(`/routes/${routeId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
+  async dispatchRoutes(routeIds) {
+    return apiRequest('/orders/dispatch-routes', {
+      method: 'POST',
+      body: JSON.stringify({ route_ids: routeIds }),
     });
   },
 };

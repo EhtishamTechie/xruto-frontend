@@ -227,7 +227,7 @@ Weight: 2.8kg`;
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
           placeholder="Paste your orders here in the format shown in the sample..."
-          className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+          className="w-full h-96 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-y text-gray-900"
           disabled={isProcessing}
         />
         

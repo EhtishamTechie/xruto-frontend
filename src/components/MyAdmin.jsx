@@ -35,26 +35,26 @@ const ArrowRightIcon = () => (
   </svg>
 );
 
-const TrashIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+const TrashIcon = ({ className, onClick, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} onClick={onClick} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
   </svg>
 );
 
-const EditIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+const EditIcon = ({ className, onClick, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} onClick={onClick} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" />
   </svg>
 );
 
-const SaveIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+const SaveIcon = ({ className, onClick, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} onClick={onClick} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
   </svg>
 );
 
-const CancelIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+const CancelIcon = ({ className, onClick, ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} onClick={onClick} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
@@ -119,6 +119,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
     firstName: '', 
     lastName: '', 
     email: '', 
+    password: '',
     phone: '',
     depotId: '', 
     mpg: '',
@@ -274,6 +275,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
         firstName: newDriver.firstName,
         lastName: newDriver.lastName,
         email: newDriver.email,
+        password: newDriver.password || null,
         phone: newDriver.phone,
         depotId: newDriver.depotId || null,
         mpg: newDriver.mpg ? parseFloat(newDriver.mpg) : null,
@@ -289,6 +291,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
         firstName: '', 
         lastName: '', 
         email: '', 
+        password: '',
         phone: '',
         depotId: '', 
         mpg: '',
@@ -385,15 +388,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
 
   return (
     <div className="bg-[#0D0B1F] min-h-screen text-white">
-      <header className="p-4 flex justify-between items-center">
-        <button 
-          onClick={onNavigateToDashboard}
-          className="text-sm text-orange-400 flex items-center hover:text-orange-300 transition-colors"
-        >
-          <ArrowLeftIcon className="w-4 h-4 mr-1" />
-          Back to Dashboard
-        </button>
-        
+      <header className="p-4 flex justify-end items-center">
         <div className="flex items-center space-x-4">
           <button 
             onClick={() => setHelpEnabled(!helpEnabled)}
@@ -678,7 +673,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                 <MailIcon className="w-5 h-5 text-gray-400" />
                 <input
                   type="email"
-                  placeholder="Email Address"
+                  placeholder="Email Address (for login)"
                   value={newDriver.email}
                   onChange={(e) => setNewDriver(prev => ({ ...prev, email: e.target.value }))}
                   className="bg-transparent w-full ml-3 text-white placeholder-gray-500 focus:outline-none"
@@ -686,6 +681,17 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                 />
               </div>
               
+              <input
+                type="password"
+                placeholder="Login Password"
+                value={newDriver.password}
+                onChange={(e) => setNewDriver(prev => ({ ...prev, password: e.target.value }))}
+                className="bg-black/20 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none"
+                disabled={saving}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="tel"
                 placeholder="Phone Number"

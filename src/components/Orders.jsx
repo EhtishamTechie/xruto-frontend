@@ -1,7 +1,4 @@
-// import React, { useState, useEffect } from 'react';
-
-// // API service configuration - Use environment variable
-// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// ── Legacy commented-out version removed ──────────────────────────────────────
 
 // const ordersAPI = {
 //   getEligibleOrders: async (date) => {
@@ -1136,7 +1133,10 @@ const ordersAPI = {
 
 const Orders = () => {
   const [activeTab, setActiveTab] = useState(0); // Changed to start with upload tab
-  const [uploadMethod, setUploadMethod] = useState('text'); // 'text' or 'pdf'
+  const [uploadMethod, setUploadMethod] = useState('text'); // 'text', 'pdf', or 'excel'
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelUploading, setExcelUploading] = useState(false);
+  const [excelResult, setExcelResult] = useState(null);
   const [selectedPostcodes, setSelectedPostcodes] = useState([]);
   const [availablePostcodes, setAvailablePostcodes] = useState([]);
   const [eligibleOrders, setEligibleOrders] = useState([]);
@@ -1393,12 +1393,12 @@ const Orders = () => {
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'generated': return 'bg-gray-100 text-gray-800';
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'dispatched': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'generated': return 'bg-gray-500/20 text-gray-300';
+      case 'assigned': return 'bg-blue-500/20 text-blue-300';
+      case 'dispatched': return 'bg-green-500/20 text-green-300';
+      case 'in_progress': return 'bg-yellow-500/20 text-yellow-300';
+      case 'completed': return 'bg-green-500/20 text-green-300';
+      default: return 'bg-gray-500/20 text-gray-300';
     }
   };
 
@@ -1410,17 +1410,17 @@ const Orders = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto p-6 bg-transparent min-h-screen">
       {/* Header */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">xRuto Route Optimization</h1>
-          <p className="text-gray-600">AI-powered clustering with depot return logic</p>
+          <h1 className="text-3xl font-bold text-white mb-2">xRuto Route Optimization</h1>
+          <p className="text-gray-400">AI-powered clustering with depot return logic</p>
         </div>
         
         {/* Reset Orders Button */}
         <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-500">Orders: {eligibleOrders.length}</span>
+          <span className="text-sm text-gray-400">Orders: {eligibleOrders.length}</span>
           <button
             onClick={() => setShowResetConfirm(true)}
             disabled={resetting || loading}
@@ -1459,10 +1459,10 @@ const Orders = () => {
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl">
+          <div className="bg-[#1a1835] border border-white/10 p-6 rounded-2xl shadow-xl">
             <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="text-lg">Processing optimization...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              <span className="text-lg text-white">Processing optimization...</span>
             </div>
           </div>
         </div>
@@ -1481,15 +1481,15 @@ const Orders = () => {
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 px-4 py-3 text-center rounded-md transition-colors relative ${
               activeTab === tab.id 
-                ? 'bg-blue-500 text-white shadow-md' 
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-orange-500 text-white shadow-md' 
+                : 'text-gray-400 hover:bg-white/5'
             }`}
           >
             <div className="font-medium">{tab.label}</div>
             <div className="text-xs opacity-75">{tab.desc}</div>
             {tab.count > 0 && (
               <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs flex items-center justify-center ${
-                activeTab === tab.id ? 'bg-white text-blue-500' : 'bg-blue-500 text-white'
+                activeTab === tab.id ? 'bg-white text-orange-500' : 'bg-orange-500 text-white'
               }`}>
                 {tab.count}
               </span>
@@ -1499,32 +1499,32 @@ const Orders = () => {
       </div>
 
       {/* Optimization Summary */}
-      <div className="mb-6 bg-white rounded-lg shadow-md p-4">
-        <h2 className="text-lg font-semibold mb-3 flex items-center">
+      <div className="mb-6 bg-white/5 border border-white/10 rounded-2xl p-4">
+        <h2 className="text-lg font-semibold mb-3 flex items-center text-white">
           <span className="mr-2">📊</span>
           Enhanced Route Optimization Summary
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{eligibleOrders.length}</div>
-            <div className="text-sm text-blue-800">Total Orders</div>
+          <div className="text-center p-3 bg-blue-500/10 rounded-xl">
+            <div className="text-2xl font-bold text-blue-400">{eligibleOrders.length}</div>
+            <div className="text-sm text-blue-300">Total Orders</div>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">{previewZones.length}</div>
-            <div className="text-sm text-green-800">Generated Zones</div>
+          <div className="text-center p-3 bg-green-500/10 rounded-xl">
+            <div className="text-2xl font-bold text-green-400">{previewZones.length}</div>
+            <div className="text-sm text-green-300">Generated Zones</div>
           </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">{generatedRoutes.length}</div>
-            <div className="text-sm text-purple-800">Optimized Routes</div>
+          <div className="text-center p-3 bg-purple-500/10 rounded-xl">
+            <div className="text-2xl font-bold text-purple-400">{generatedRoutes.length}</div>
+            <div className="text-sm text-purple-300">Optimized Routes</div>
           </div>
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">
+          <div className="text-center p-3 bg-orange-500/10 rounded-xl">
+            <div className="text-2xl font-bold text-orange-400">
               {generatedRoutes.reduce((sum, r) => sum + (r.depot_returns_count || 0), 0)}
             </div>
-            <div className="text-sm text-orange-800">Depot Returns</div>
+            <div className="text-sm text-orange-300">Depot Returns</div>
           </div>
         </div>
-        <div className="mt-3 text-sm text-gray-600 text-center">
+        <div className="mt-3 text-sm text-gray-400 text-center">
           ✨ Enhanced with realistic time calculation & depot return logic
         </div>
       </div>
@@ -1533,15 +1533,15 @@ const Orders = () => {
       {activeTab === 0 && (
         <div className="space-y-6">
           {/* Upload Method Selector */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Choose Upload Method</h3>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 text-white">Choose Upload Method</h3>
             <div className="flex space-x-4">
               <button
                 onClick={() => setUploadMethod('text')}
                 className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
                   uploadMethod === 'text'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                 }`}
               >
                 📝 Text Copy-Paste
@@ -1553,13 +1553,26 @@ const Orders = () => {
                 onClick={() => setUploadMethod('pdf')}
                 className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
                   uploadMethod === 'pdf'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                 }`}
               >
                 📄 PDF Upload
                 <div className="text-xs mt-1 opacity-75">
                   From PDF files
+                </div>
+              </button>
+              <button
+                onClick={() => setUploadMethod('excel')}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                  uploadMethod === 'excel'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                📊 Excel Upload
+                <div className="text-xs mt-1 opacity-75">
+                  .xlsx / .xls files
                 </div>
               </button>
             </div>
@@ -1569,8 +1582,61 @@ const Orders = () => {
           <div className="flex justify-center">
             {uploadMethod === 'text' ? (
               <TextBulkUpload onOrdersUploaded={handleOrdersUploaded} />
-            ) : (
+            ) : uploadMethod === 'pdf' ? (
               <PDFUpload onOrdersUploaded={handleOrdersUploaded} />
+            ) : (
+              /* Excel Upload */
+              <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-white">Upload Excel File</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Accepts <span className="text-orange-400">.xlsx</span> / <span className="text-orange-400">.xls</span> files.
+                  Expected columns: <span className="text-gray-300">Order ID, Customer Name, Address, Lat, Lon, Meal Qty</span>
+                </p>
+                <label className="block w-full cursor-pointer border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-orange-400/50 transition-colors">
+                  <span className="text-4xl mb-3 block">📊</span>
+                  <span className="text-gray-300 font-medium">{excelFile ? excelFile.name : 'Click to choose Excel file'}</span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={e => { setExcelFile(e.target.files[0] || null); setExcelResult(null); }}
+                  />
+                </label>
+                {excelFile && (
+                  <button
+                    disabled={excelUploading}
+                    onClick={async () => {
+                      setExcelUploading(true);
+                      setExcelResult(null);
+                      try {
+                        const form = new FormData();
+                        form.append('excelFile', excelFile);
+                        const res = await fetch(`${API_BASE_URL}/orders/upload-excel`, { method: 'POST', body: form });
+                        const data = await res.json();
+                        if (data.success) {
+                          setExcelResult({ type: 'success', message: data.message, count: data.insertedCount });
+                          setExcelFile(null);
+                          if (handleOrdersUploaded) handleOrdersUploaded(data.orders);
+                        } else {
+                          setExcelResult({ type: 'error', message: data.message });
+                        }
+                      } catch (err) {
+                        setExcelResult({ type: 'error', message: err.message });
+                      } finally {
+                        setExcelUploading(false);
+                      }
+                    }}
+                    className="mt-4 w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold transition-colors"
+                  >
+                    {excelUploading ? 'Uploading…' : 'Upload Excel Orders'}
+                  </button>
+                )}
+                {excelResult && (
+                  <div className={`mt-4 p-4 rounded-xl text-sm font-medium ${excelResult.type === 'success' ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                    {excelResult.type === 'success' ? `✅ ${excelResult.message}` : `❌ ${excelResult.message}`}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1580,24 +1646,24 @@ const Orders = () => {
       {activeTab === 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Postcode Selection */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Select Delivery Areas</h2>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-white">Select Delivery Areas</h2>
             
-            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+            <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-blue-600 font-semibold">{eligibleOrders.length}</span>
-                  <span className="text-blue-800 ml-1">Total Orders</span>
+                  <span className="text-blue-400 font-semibold">{eligibleOrders.length}</span>
+                  <span className="text-blue-300 ml-1">Total Orders</span>
                 </div>
                 <div>
-                  <span className="text-blue-600 font-semibold">{selectedPostcodes.length}</span>
-                  <span className="text-blue-800 ml-1">Selected Areas</span>
+                  <span className="text-blue-400 font-semibold">{selectedPostcodes.length}</span>
+                  <span className="text-blue-300 ml-1">Selected Areas</span>
                 </div>
               </div>
             </div>
             
             {availablePostcodes.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-400">
                 <div className="text-4xl mb-2">📦</div>
                 <p>No postcode areas found</p>
               </div>
@@ -1617,15 +1683,15 @@ const Orders = () => {
                           className="h-4 w-4 text-blue-600 rounded mr-3"
                         />
                         <div>
-                          <span className="font-medium">{postcode}</span>
-                          <div className="text-xs text-gray-500">
+                          <span className="font-medium text-white">{postcode}</span>
+                          <div className="text-xs text-gray-400">
                             Avg {avgDistance.toFixed(1)}km from depot
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-semibold">{ordersInPostcode.length} orders</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-sm font-semibold text-white">{ordersInPostcode.length} orders</div>
+                        <div className="text-xs text-gray-400">
                           £{ordersInPostcode.reduce((sum, o) => sum + (o.order_value || 0), 0).toFixed(2)}
                         </div>
                       </div>
@@ -1639,7 +1705,7 @@ const Orders = () => {
               <button
                 onClick={previewClustering}
                 disabled={selectedPostcodes.length === 0 || loading}
-                className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="w-full bg-orange-500 text-white py-3 px-4 rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {loading ? 'Generating...' : 'Generate Clusters with AI'}
               </button>
@@ -1657,17 +1723,17 @@ const Orders = () => {
           </div>
 
           {/* Zone Preview */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Clustering Preview</h2>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-white">Clustering Preview</h2>
             {previewZones.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-400">
                 <div className="text-6xl mb-4">🗺️</div>
                 <p className="text-lg mb-2">No clusters generated yet</p>
                 <p className="text-sm">Select postcodes and click "Generate Clusters"</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm text-gray-600 mb-4">
+                <div className="text-sm text-gray-400 mb-4">
                   Generated {previewZones.length} zones using enhanced K-means clustering
                 </div>
                 {previewZones.map(zone => (
@@ -1678,26 +1744,26 @@ const Orders = () => {
                           className="w-4 h-4 rounded-full mr-3"
                           style={{ backgroundColor: zone.color_hex }}
                         ></div>
-                        <h3 className="font-medium">{zone.zone_name}</h3>
+                        <h3 className="font-medium text-white">{zone.zone_name}</h3>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">{zone.total_orders} orders</span>
+                      <span className="text-sm font-semibold text-gray-300">{zone.total_orders} orders</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="text-gray-600">
-                        <span className="font-medium">Distance:</span> {zone.route_distance_km?.toFixed(1) || 'N/A'}km
+                      <div className="text-gray-400">
+                        <span className="font-medium text-gray-300">Distance:</span> {zone.route_distance_km?.toFixed(1) || 'N/A'}km
                       </div>
-                      <div className="text-gray-600">
-                        <span className="font-medium">Duration:</span> ~{formatDuration(zone.estimated_duration)}
+                      <div className="text-gray-400">
+                        <span className="font-medium text-gray-300">Duration:</span> ~{formatDuration(zone.estimated_duration)}
                       </div>
-                      <div className="text-gray-600">
-                        <span className="font-medium">Value:</span> £{zone.total_value || 0}
+                      <div className="text-gray-400">
+                        <span className="font-medium text-gray-300">Value:</span> £{zone.total_value || 0}
                       </div>
-                      <div className="text-gray-600">
-                        <span className="font-medium">Returns:</span> {zone.depot_returns_needed || 0}x
+                      <div className="text-gray-400">
+                        <span className="font-medium text-gray-300">Returns:</span> {zone.depot_returns_needed || 0}x
                       </div>
                     </div>
                     {zone.depot_returns_needed > 1 && (
-                      <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                      <div className="mt-2 text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 p-2 rounded-lg">
                         🔄 Route includes {zone.depot_returns_needed} depot return(s)
                       </div>
                     )}
@@ -1712,16 +1778,16 @@ const Orders = () => {
       {/* Tab 2: Route Review */}
       {activeTab === 2 && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-md">
+          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl">
             <div>
-              <h2 className="text-xl font-semibold">Enhanced Route Results</h2>
-              <p className="text-gray-600">{generatedRoutes.length} routes with realistic calculations</p>
+              <h2 className="text-xl font-semibold text-white">Enhanced Route Results</h2>
+              <p className="text-gray-400">{generatedRoutes.length} routes with realistic calculations</p>
             </div>
             <div className="space-x-3">
               <button
                 onClick={autoAssignAllDrivers}
                 disabled={loading || availableDrivers.length === 0}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50"
               >
                 Auto-Assign Drivers
               </button>
@@ -1737,14 +1803,14 @@ const Orders = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {generatedRoutes.map(route => (
-              <div key={route.route_id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+              <div key={route.route_id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-colors">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <div 
                       className="w-4 h-4 rounded-full mr-3"
                       style={{ backgroundColor: route.zone_color }}
                     ></div>
-                    <h3 className="font-semibold text-gray-900">{route.route_name}</h3>
+                    <h3 className="font-semibold text-white">{route.route_name}</h3>
                   </div>
                   <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(route.status)}`}>
                     {route.status}
@@ -1754,50 +1820,50 @@ const Orders = () => {
                 <div className="space-y-3 mb-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-600">Orders:</span>
-                      <span className="font-medium ml-1">{route.total_orders}</span>
+                      <span className="text-gray-400">Orders:</span>
+                      <span className="font-medium ml-1 text-white">{route.total_orders}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Distance:</span>
-                      <span className="font-medium ml-1">{route.total_distance_km?.toFixed(1)}km</span>
+                      <span className="text-gray-400">Distance:</span>
+                      <span className="font-medium ml-1 text-white">{route.total_distance_km?.toFixed(1)}km</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Duration:</span>
-                      <span className="font-medium ml-1">{formatDuration(route.estimated_duration_minutes)}</span>
+                      <span className="text-gray-400">Duration:</span>
+                      <span className="font-medium ml-1 text-white">{formatDuration(route.estimated_duration_minutes)}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Fuel:</span>
-                      <span className="font-medium ml-1">£{route.estimated_fuel_cost}</span>
+                      <span className="text-gray-400">Fuel:</span>
+                      <span className="font-medium ml-1 text-white">£{route.estimated_fuel_cost}</span>
                     </div>
                   </div>
                   
                   {route.depot_returns_count > 0 && (
-                    <div className="flex items-center justify-between text-sm bg-orange-50 p-2 rounded">
-                      <span className="text-orange-600">🔄 Depot Returns:</span>
-                      <span className="font-medium text-orange-700">{route.depot_returns_count}x</span>
+                    <div className="flex items-center justify-between text-sm bg-orange-500/10 border border-orange-500/20 p-2 rounded-lg">
+                      <span className="text-orange-400">🔄 Depot Returns:</span>
+                      <span className="font-medium text-orange-300">{route.depot_returns_count}x</span>
                     </div>
                   )}
                   
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Efficiency:</span>
-                    <span className="font-medium text-green-600">{route.route_efficiency_score}%</span>
+                    <span className="text-gray-400">Efficiency:</span>
+                    <span className="font-medium text-green-400">{Number(route.route_efficiency_score).toFixed(1)}%</span>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
                       Assign Driver:
                     </label>
                     <select
                       value={route.driver_id || ''}
                       onChange={(e) => assignDriverToRoute(route.route_id, e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                      className="w-full bg-gray-800 border border-white/10 text-white rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                       disabled={loading}
                     >
-                      <option value="">Select Driver</option>
+                      <option value="" className="bg-gray-800 text-white">Select Driver</option>
                       {availableDrivers.map(driver => (
-                        <option key={driver.id} value={driver.id}>
+                        <option key={driver.id} value={driver.id} className="bg-gray-800 text-white">
                           {driver.name} ({driver.mpg} MPG)
                         </option>
                       ))}
@@ -1805,7 +1871,7 @@ const Orders = () => {
                   </div>
                   
                   {route.driver_id && (
-                    <div className="text-sm text-green-600 bg-green-50 p-2 rounded flex items-center">
+                    <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 p-2 rounded-lg flex items-center">
                       <span className="mr-1">✓</span>
                       <span>Assigned to {route.driver_name}</span>
                     </div>
@@ -1816,7 +1882,7 @@ const Orders = () => {
                       href={route.navigation_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full text-center px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm font-medium"
+                      className="block w-full text-center px-3 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 text-sm font-medium"
                     >
                       🗺️ View Route Map
                     </a>
@@ -1831,15 +1897,15 @@ const Orders = () => {
       {/* Tab 3: Dispatch */}
       {activeTab === 3 && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-md">
+          <div className="flex justify-between items-center bg-white/5 border border-white/10 p-4 rounded-2xl">
             <div>
-              <h2 className="text-xl font-semibold">Route Dispatch Control</h2>
-              <p className="text-gray-600">Monitor and dispatch routes to drivers</p>
+              <h2 className="text-xl font-semibold text-white">Route Dispatch Control</h2>
+              <p className="text-gray-400">Monitor and dispatch routes to drivers</p>
             </div>
             <button
               onClick={dispatchAllRoutes}
               disabled={loading || generatedRoutes.every(r => r.status === 'dispatched')}
-              className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+              className="px-6 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50"
             >
               {loading ? 'Dispatching...' : 'Dispatch All Routes'}
             </button>
@@ -1847,14 +1913,14 @@ const Orders = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {generatedRoutes.map(route => (
-              <div key={route.route_id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+              <div key={route.route_id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-colors">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <div 
                       className="w-4 h-4 rounded-full mr-3"
                       style={{ backgroundColor: route.zone_color }}
                     ></div>
-                    <h3 className="font-semibold">{route.route_name}</h3>
+                    <h3 className="font-semibold text-white">{route.route_name}</h3>
                   </div>
                   <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(route.status)}`}>
                     {route.status}
@@ -1863,45 +1929,45 @@ const Orders = () => {
 
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Progress</span>
-                    <span>{route.progress_percentage || 0}%</span>
+                    <span className="text-gray-300">Progress</span>
+                    <span className="text-gray-300">{route.progress_percentage || 0}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-white/10 rounded-full h-2">
                     <div
                       className="bg-green-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${route.progress_percentage || 0}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-400 mt-1">
                     {route.completed_orders || 0}/{route.total_orders} deliveries completed
                   </div>
                 </div>
 
                 <div className="space-y-2 text-sm mb-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Driver:</span>
-                    <span className="font-medium">{route.driver_name || 'Unassigned'}</span>
+                    <span className="text-gray-400">Driver:</span>
+                    <span className="font-medium text-white">{route.driver_name || 'Unassigned'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Distance:</span>
-                    <span>{route.total_distance_km?.toFixed(1)}km</span>
+                    <span className="text-gray-400">Distance:</span>
+                    <span className="text-white">{route.total_distance_km?.toFixed(1)}km</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duration:</span>
-                    <span>{formatDuration(route.estimated_duration_minutes)}</span>
+                    <span className="text-gray-400">Duration:</span>
+                    <span className="text-white">{formatDuration(route.estimated_duration_minutes)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Depot Returns:</span>
-                    <span className="font-medium text-orange-600">{route.depot_returns_count || 0}x</span>
+                    <span className="text-gray-400">Depot Returns:</span>
+                    <span className="font-medium text-orange-400">{route.depot_returns_count || 0}x</span>
                   </div>
                 </div>
 
                 {route.depot_returns_count > 1 && (
-                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <div className="text-xs text-orange-700 font-medium mb-1">
+                  <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                    <div className="text-xs text-orange-400 font-medium mb-1">
                       Multi-Segment Route
                     </div>
-                    <div className="text-xs text-orange-600">
+                    <div className="text-xs text-orange-300">
                       Driver will return to depot {route.depot_returns_count} times during this route
                     </div>
                   </div>
@@ -1920,7 +1986,7 @@ const Orders = () => {
                   )}
                   
                   {route.status === 'dispatched' && (
-                    <div className="text-center text-xs text-green-600 bg-green-50 p-2 rounded">
+                    <div className="text-center text-xs text-green-400 bg-green-500/10 border border-green-500/20 p-2 rounded-lg">
                       ✓ Dispatched at {new Date(route.dispatched_at).toLocaleTimeString()}
                     </div>
                   )}
@@ -1934,21 +2000,21 @@ const Orders = () => {
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-[#1a1835] border border-white/10 p-6 rounded-2xl shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex-shrink-0">
-                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Reset All Orders</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
+                <h3 className="text-lg font-medium text-white">Reset All Orders</h3>
+                <p className="text-sm text-gray-400">This action cannot be undone</p>
               </div>
             </div>
             
             <div className="mb-6">
-              <p className="text-gray-700">
+              <p className="text-gray-300">
                 Are you sure you want to delete all {eligibleOrders.length} orders? This will permanently remove all order data from the database.
               </p>
             </div>
@@ -1957,7 +2023,7 @@ const Orders = () => {
               <button
                 onClick={() => setShowResetConfirm(false)}
                 disabled={resetting}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 px-4 py-2 border border-white/10 text-gray-300 rounded-xl hover:bg-white/5 disabled:opacity-50"
               >
                 Cancel
               </button>
