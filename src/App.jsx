@@ -294,12 +294,13 @@ const AnalyticsScreen = () => {
         ]);
         const routes = routesRes.success ? (routesRes.routes || []) : [];
         const orders = ordersRes.success ? (ordersRes.orders || []) : [];
-        const delivered = routes.reduce((sum, r) => sum + (r.stops || r.orders || []).filter(s => s.status === 'delivered').length, 0);
-        const totalStops = routes.reduce((sum, r) => sum + (r.stops || r.orders || []).length, 0);
+        const allRouteOrders = routes.flatMap(r => r.route_segments?.flatMap(s => s.orders || []) || []);
+        const delivered = allRouteOrders.filter(s => s.status === 'delivered').length;
+        const totalStops = allRouteOrders.length;
         const avgDuration = routes.length > 0 ? routes.reduce((sum, r) => sum + (r.estimated_duration || r.total_time || 0), 0) / routes.length : 0;
         const dispatched = routes.filter(r => r.status === 'dispatched' || r.status === 'in_progress').length;
         const completed = routes.filter(r => r.status === 'completed').length;
-        const pending = orders.filter(o => o.status !== 'delivered' && o.status !== 'completed').length;
+        const pending = orders.length - delivered;
         setStats({ totalRoutes: routes.length, delivered, totalStops, avgDuration, dispatched, completed, pendingOrders: pending, totalOrders: orders.length });
       } catch { setStats(null); }
       setLoading(false);
