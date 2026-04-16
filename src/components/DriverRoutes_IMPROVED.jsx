@@ -1,664 +1,391 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-// Get API URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// API service for driver routes
+// API service
 const driverAPI = {
-  // Get all generated routes (from Orders page)
   getAllRoutes: async (date = new Date().toISOString().split('T')[0]) => {
     try {
-      // First try to get generated routes
       const routesResponse = await fetch(`${API_BASE_URL}/orders/get-routes?date=${date}`);
       if (routesResponse.ok) {
         const routesResult = await routesResponse.json();
         if (routesResult.success && routesResult.routes.length > 0) {
-          console.log('Found generated routes:', routesResult.routes.length);
           return { success: true, routes: routesResult.routes };
         }
       }
-      
-      // If no generated routes, get orders and create basic routes
       const response = await fetch(`${API_BASE_URL}/orders/eligible?date=${date}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result = await response.json();
-      
       return { success: true, orders: result.orders || [], routes: [] };
     } catch (error) {
-      console.error('API Error - getAllRoutes:', error);
       throw new Error(`Failed to fetch routes: ${error.message}`);
     }
   },
-
-  // Update delivery status from driver app
-  updateDeliveryStatus: async (orderId, status, location = null) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/orders/delivery-status/${orderId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: status,
-          location: location,
-          timestamp: new Date().toISOString()
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return response.json();
-    } catch (error) {
-      console.error('API Error - updateDeliveryStatus:', error);
-      throw new Error(`Failed to update delivery status: ${error.message}`);
+  updateDeliveryStatus: async (orderId, status) => {
+    const response = await fetch(`${API_BASE_URL}/orders/delivery-status/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, timestamp: new Date().toISOString() })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
     }
-  },
-
-  // Get detailed route information
-  getRouteDetails: async (routeId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/orders/route-details/${routeId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return response.json();
-    } catch (error) {
-      console.error('API Error - getRouteDetails:', error);
-      throw new Error(`Failed to fetch route details: ${error.message}`);
-    }
+    return response.json();
   }
 };
 
-// Depot Return Segments Component - Improved
-const DepotReturnSegments = ({ route, onNavigateSegment }) => {
-  const segments = route.route_segments || [];
-  
-  if (segments.length <= 1) return null;
+const fmtDuration = (m) => { if (!m) return '0 min'; if (m < 60) return `${Math.round(m)} min`; return `${Math.floor(m / 60)}h ${Math.round(m % 60)}m`; };
+const fmtDist = (km) => { if (!km) return '0 km'; return km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)} km`; };
+
+const ZONE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444'];
+const ZONE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+// Slide button (Figma pattern)
+const SlideButton = ({ label, onConfirm, loading = false }) => {
+  const trackRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const getMaxX = () => (trackRef.current ? trackRef.current.offsetWidth - 48 : 200);
+  const handleStart = () => { if (!loading) setDragging(true); };
+  const handleMove = (clientX) => {
+    if (!dragging || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    setOffsetX(Math.max(0, Math.min(clientX - rect.left - 24, getMaxX())));
+  };
+  const handleEnd = () => {
+    if (!dragging) return;
+    setDragging(false);
+    if (offsetX >= getMaxX() * 0.85) onConfirm();
+    setOffsetX(0);
+  };
 
   return (
-    <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-      <div className="flex items-center mb-3">
-        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-          <span className="text-sm font-bold text-white">{segments.length}</span>
-        </div>
-        <h4 className="text-lg font-semibold text-white">Multi-Segment Route</h4>
-        <span className="ml-2 text-sm text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-1 rounded-full">
-          {segments.length} depot returns required
-        </span>
+    <div ref={trackRef}
+      className={`relative h-12 rounded-full overflow-hidden select-none ${loading ? 'opacity-50' : ''}`}
+      style={{ background: 'linear-gradient(135deg, #0f1b2e 0%, #162540 100%)', border: '1px solid rgba(59,130,246,0.25)' }}
+      onMouseMove={e => handleMove(e.clientX)} onMouseUp={handleEnd} onMouseLeave={handleEnd}
+      onTouchMove={e => handleMove(e.touches[0].clientX)} onTouchEnd={handleEnd}>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span className="text-white/70 text-sm font-medium">{loading ? 'Processing...' : label}</span>
       </div>
-      
-      <div className="space-y-3">
-        {segments.map((segment, index) => (
-          <div key={index} className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-xl">
-            <div className="flex items-center">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                <span className="text-xs font-bold text-white">{index + 1}</span>
-              </div>
-              <div>
-                <div className="font-medium text-white">
-                  Segment {index + 1}: {segment.orders?.length || 0} orders
-                </div>
-                <div className="text-sm text-gray-400">
-                  Est. {Math.round(segment.estimated_duration_minutes || 0)} min • 
-                  {(segment.total_distance_km || 0).toFixed(1)} km
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              {segment.return_to_depot && (
-                <span className="text-xs bg-orange-500/10 text-orange-300 border border-orange-500/20 px-2 py-1 rounded-full">
-                  🔄 Return to depot
-                </span>
-              )}
-              <button
-                onClick={() => onNavigateSegment(route, segment)}
-                className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Navigate
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-3 text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 p-2 rounded-xl">
-        💡 <strong>Multi-segment route:</strong> You'll need to return to depot between segments to reload/restock.
+      <div className="absolute top-1 left-1 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 cursor-grab active:cursor-grabbing z-10"
+        style={{ transform: `translateX(${offsetX}px)` }}
+        onMouseDown={e => { e.preventDefault(); handleStart(); }} onTouchStart={handleStart}>
+        {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          : <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
       </div>
     </div>
   );
 };
 
-// Status color mapping
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'generated': return 'bg-gray-500';
-    case 'pending': return 'bg-yellow-500';
-    case 'assigned': return 'bg-blue-500';
-    case 'dispatched': return 'bg-indigo-500';
-    case 'in_progress': return 'bg-purple-500';
-    case 'in_route': return 'bg-purple-500';
-    case 'completed': return 'bg-green-600';
-    case 'delivered': return 'bg-green-500';
-    case 'failed': return 'bg-red-500';
-    default: return 'bg-gray-500';
-  }
+// Zone Card (Figma layout)
+const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
+  const [expanded, setExpanded] = useState(false);
+  const allOrders = route.route_segments?.flatMap(s => s.orders || []) || [];
+  const completed = allOrders.filter(o => o.status === 'delivered').length;
+  const failed = allOrders.filter(o => o.status === 'failed').length;
+  const total = route.total_orders || allOrders.length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const color = ZONE_COLORS[index % ZONE_COLORS.length];
+  const zoneLetter = ZONE_LABELS[index % ZONE_LABELS.length];
+
+  const isCompleted = pct === 100 || route.status === 'completed';
+  const isInProgress = (route.status === 'in_progress' || route.status === 'in_route' || route.status === 'dispatched') && !isCompleted;
+  const isNotStarted = !isCompleted && !isInProgress;
+
+  const statusLabel = isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started';
+  const statusColor = isCompleted ? 'text-green-400 bg-green-500/15' : isInProgress ? 'text-orange-400 bg-orange-500/15' : 'text-red-400 bg-red-500/15';
+
+  return (
+    <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-white">Zone {zoneLetter}</span>
+            <span style={{ color }} className="text-lg font-bold">&rarr;</span>
+          </div>
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>{statusLabel}</span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-1.5 bg-[#0a0e1a] rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
+          </div>
+          <span className="text-xs font-bold text-gray-400">{pct}%</span>
+        </div>
+
+        {/* Stats row */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <span className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {fmtDuration(route.estimated_duration_minutes)}
+          </span>
+          <span className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            {total} stops
+          </span>
+          <span className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            {fmtDist(route.total_distance_km)}
+          </span>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 mb-1">
+          <button onClick={() => onNavigate(route)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold text-white transition-all"
+            style={{ backgroundColor: `${color}20`, color }}>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            Navigate
+          </button>
+          <button onClick={() => setExpanded(v => !v)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold 
+              bg-[#0a0e1a] border border-[#1a2a45] text-gray-400 hover:text-white transition-all">
+            <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M19 9l-7 7-7-7"/></svg>
+            {expanded ? 'Hide Orders' : 'Show Orders'}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded orders */}
+      {expanded && (
+        <div className="border-t border-[#1a2a45] bg-[#0c1220] p-4 space-y-2">
+          {allOrders.map((order, idx) => {
+            const isDone = order.status === 'delivered' || order.status === 'failed';
+            return (
+              <div key={order.id || idx} className={`flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-[#111b2e]/60' : 'bg-[#111b2e]'} border border-[#1a2a45]`}>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${isDone ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/15 text-orange-400'}`}>
+                  {isDone ? '\u2713' : idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${isDone ? 'text-gray-500 line-through' : 'text-white'}`}>{order.customer_name}</p>
+                  <p className="text-xs text-gray-600 truncate">{order.delivery_address}</p>
+                </div>
+                <div className="shrink-0 flex items-center gap-1.5">
+                  <button onClick={() => onOrderNav(order)}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition">
+                    Go
+                  </button>
+                  {!isDone && (
+                    <>
+                      <button onClick={() => onOrderStatus(order.id, 'delivered')}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-500/15 text-green-400 hover:bg-green-500/25 transition">
+                        Delivered
+                      </button>
+                      <button onClick={() => onOrderStatus(order.id, 'failed')}
+                        className="px-2 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 hover:bg-red-500/25 transition">
+                        Fail
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Slide button */}
+      <div className="p-4 pt-0">
+        {isCompleted ? (
+          <div className="flex items-center justify-center gap-2 py-3 text-green-400 text-sm font-medium">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Route Completed
+          </div>
+        ) : isInProgress ? (
+          <SlideButton label="Slide To Complete Route" onConfirm={() => {}} />
+        ) : (
+          <SlideButton label="Slide To Start Route" onConfirm={() => onNavigate(route)} />
+        )}
+      </div>
+    </div>
+  );
 };
 
-const getStatusText = (status) => {
-  switch (status) {
-    case 'generated': return 'Generated';
-    case 'pending': return 'Pending';
-    case 'assigned': return 'Assigned';
-    case 'dispatched': return 'Dispatched';
-    case 'in_progress': return 'In Progress';
-    case 'in_route': return 'In Route';
-    case 'completed': return 'Completed';
-    case 'delivered': return 'Delivered';
-    case 'failed': return 'Failed';
-    default: return 'Unknown';
-  }
-};
-
-// Format duration helper
-const formatDuration = (minutes) => {
-  if (!minutes) return '0 min';
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  const hours = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
-  return `${hours}h ${mins}min`;
-};
-
-// Format distance helper
-const formatDistance = (km) => {
-  if (!km) return '0 km';
-  if (km < 1) return `${Math.round(km * 1000)}m`;
-  return `${km.toFixed(1)} km`;
-};
-
-// Main DriverRoutes Component
+// Main Component
 const DriverRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedRoute, setSelectedRoute] = useState(null);
-  const [liveUpdateEnabled, setLiveUpdateEnabled] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [liveUpdate, setLiveUpdate] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Load driver routes
-  const loadDriverRoutes = async () => {
+  const loadRoutes = useCallback(async () => {
     setLoading(true);
     setError('');
-    
     try {
       const result = await driverAPI.getAllRoutes();
-      
       if (result.success) {
-        // If we have generated routes, use them (these are the proper separate zones)
         if (result.routes && result.routes.length > 0) {
-          // Filter routes to only show ones assigned to the logged-in driver
           const savedUser = localStorage.getItem('xruto_user');
           const currentUser = savedUser ? JSON.parse(savedUser) : null;
-          let filteredRoutes = result.routes;
-          
+          let filtered = result.routes;
           if (currentUser && currentUser.role === 'driver') {
-            filteredRoutes = result.routes.filter(route => {
-              // Match by driver email (links USERS account to MOCK_DRIVERS record)
-              if (route.driver_email && currentUser.email) {
-                return route.driver_email.toLowerCase() === currentUser.email.toLowerCase();
-              }
-              return false;
-            });
-            console.log(`Driver ${currentUser.email}: showing ${filteredRoutes.length} of ${result.routes.length} routes`);
+            filtered = result.routes.filter(r =>
+              r.driver_email && currentUser.email &&
+              r.driver_email.toLowerCase() === currentUser.email.toLowerCase()
+            );
           }
-          
-          console.log('Using generated routes:', filteredRoutes.length);
-          setRoutes(filteredRoutes);
+          setRoutes(filtered);
         } else if (result.orders && result.orders.length > 0) {
-          // If no generated routes but we have orders, create basic routes by postcode
-          console.log('Creating basic routes from orders:', result.orders.length);
-          const ordersByPostcode = result.orders.reduce((acc, order) => {
-            const postcodeArea = order.postcode.split(' ')[0];
-            if (!acc[postcodeArea]) acc[postcodeArea] = [];
-            acc[postcodeArea].push(order);
-            return acc;
+          const byPC = result.orders.reduce((a, o) => {
+            const pc = o.postcode.split(' ')[0];
+            (a[pc] = a[pc] || []).push(o);
+            return a;
           }, {});
-
-          const mockRoutes = Object.entries(ordersByPostcode).map(([postcode, orders], index) => {
-            const totalDistance = orders.reduce((sum, order) => sum + (order.distance_from_depot_km || 5), 0);
-            const estimatedDuration = orders.length * 10; // 10 min per order
-            const completedOrders = orders.filter(order => order.status === 'delivered').length;
-            
+          setRoutes(Object.entries(byPC).map(([pc, orders], i) => {
+            const comp = orders.filter(o => o.status === 'delivered').length;
             return {
-              id: `route-${index + 1}`,
-              route_name: `Route ${String.fromCharCode(65 + index)} - ${postcode}`,
-              status: completedOrders === orders.length ? 'completed' : completedOrders > 0 ? 'in_route' : 'assigned',
-              total_orders: orders.length,
-              completed_orders: completedOrders,
-              estimated_duration_minutes: estimatedDuration,
-              total_distance_km: totalDistance,
-              zone_color: ['#FF6B35', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][index % 5],
-              depot_returns_needed: Math.ceil(orders.length / 10), // 1 return per 10 orders
-              route_segments: [{
-                orders: orders.map(order => ({
-                  ...order,
-                  id: order.id,
-                  customer_name: order.customer_name,
-                  delivery_address: order.delivery_address,
-                  latitude: order.latitude,
-                  longitude: order.longitude,
-                  status: order.status || 'pending'
-                })),
-                estimated_duration_minutes: estimatedDuration,
-                total_distance_km: totalDistance,
-                return_to_depot: true
-              }]
+              id: `route-${i + 1}`, route_name: `Route ${ZONE_LABELS[i]} - ${pc}`,
+              status: comp === orders.length ? 'completed' : comp > 0 ? 'in_route' : 'assigned',
+              total_orders: orders.length, completed_orders: comp,
+              estimated_duration_minutes: orders.length * 10,
+              total_distance_km: orders.reduce((s, o) => s + (o.distance_from_depot_km || 5), 0),
+              zone_color: ZONE_COLORS[i % ZONE_COLORS.length],
+              depot_returns_needed: Math.ceil(orders.length / 10),
+              route_segments: [{ orders: orders.map(o => ({ ...o, status: o.status || 'pending' })),
+                return_to_depot: true }]
             };
-          });
-
-          setRoutes(mockRoutes);
-        } else {
-          // No orders or routes
-          setRoutes([]);
-        }
-        setLastUpdate(new Date());
-      } else {
-        throw new Error(result.message || 'Failed to load routes');
+          }));
+        } else { setRoutes([]); }
+        setLastRefresh(new Date());
       }
-    } catch (error) {
-      console.error('Failed to load driver routes:', error);
-      setError(error.message);
-      setRoutes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Live updates
-  useEffect(() => {
-    let interval;
-    if (liveUpdateEnabled) {
-      interval = setInterval(loadDriverRoutes, 30000); // Update every 30 seconds
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [liveUpdateEnabled]);
-
-  // Initial load
-  useEffect(() => {
-    loadDriverRoutes();
+    } catch (e) { setError(e.message); setRoutes([]); }
+    finally { setLoading(false); }
   }, []);
 
-  // Navigate to full route
-  const navigateToRoute = (route) => {
-    // Check for pre-built navigation URL from backend
+  useEffect(() => { loadRoutes(); }, [loadRoutes]);
+  useEffect(() => { if (!liveUpdate) return; const id = setInterval(loadRoutes, 30000); return () => clearInterval(id); }, [liveUpdate, loadRoutes]);
+
+  const navRoute = (route) => {
     if (route.navigation_url) {
-      const navUrl = typeof route.navigation_url === 'object' ? route.navigation_url.url : route.navigation_url;
-      if (navUrl && navUrl.startsWith('http')) {
-        console.log('Using backend navigation URL:', navUrl);
-        window.open(navUrl, '_blank');
-        return;
-      }
+      const url = typeof route.navigation_url === 'object' ? route.navigation_url.url : route.navigation_url;
+      if (url?.startsWith('http')) { window.open(url, '_blank'); return; }
     }
-
-    // Get all orders from all segments
-    const allOrders = route.route_segments?.flatMap(segment => segment.orders || []) || [];
-    
-    if (allOrders.length === 0) {
-      alert('No orders found in this route');
-      return;
-    }
-
-    // Filter orders with valid coordinates
-    const ordersWithCoords = allOrders.filter(order => 
-      order.latitude && order.longitude && 
-      !isNaN(order.latitude) && !isNaN(order.longitude)
-    );
-    
-    if (ordersWithCoords.length === 0) {
-      alert('No valid coordinates found for orders in this route');
-      return;
-    }
-    
-    // Build Google Maps driving URL with depot as origin and return
-    const waypoints = ordersWithCoords
-      .map(order => `${order.latitude},${order.longitude}`)
-      .join('/');
-    
-    const navigationUrl = `https://www.google.com/maps/dir/${waypoints}/?travelmode=driving`;
-    console.log('Opening navigation URL:', navigationUrl);
-    window.open(navigationUrl, '_blank');
+    const orders = route.route_segments?.flatMap(s => s.orders || []) || [];
+    const valid = orders.filter(o => o.latitude && o.longitude && !isNaN(o.latitude) && !isNaN(o.longitude));
+    if (!valid.length) { alert('No valid coordinates'); return; }
+    const wps = valid.map(o => `${o.latitude},${o.longitude}`).join('/');
+    window.open(`https://www.google.com/maps/dir/${wps}/?travelmode=driving`, '_blank');
   };
 
-  // Navigate to specific segment
-  const navigateToSegment = (route, segment) => {
-    const segmentOrders = segment.orders || [];
-    
-    if (segmentOrders.length === 0) {
-      alert('No orders found in this segment');
-      return;
-    }
-
-    // Filter orders with valid coordinates
-    const ordersWithCoords = segmentOrders.filter(order => 
-      order.latitude && order.longitude && 
-      !isNaN(order.latitude) && !isNaN(order.longitude)
-    );
-    
-    if (ordersWithCoords.length === 0) {
-      alert('No valid coordinates found for orders in this segment');
-      return;
-    }
-    
-    // Use Google Maps for navigation
-    const waypoints = ordersWithCoords
-      .map(order => `${order.latitude},${order.longitude}`)
-      .join('/');
-    
-    const navigationUrl = `https://www.google.com/maps/dir/${waypoints}/?travelmode=driving`;
-    console.log('Opening segment navigation URL:', navigationUrl);
-    window.open(navigationUrl, '_blank');
+  const navStop = (order) => {
+    if (!order.latitude || !order.longitude) { alert('No coordinates'); return; }
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${order.latitude},${order.longitude}&travelmode=driving`, '_blank');
   };
 
-  // Update delivery status
-  const updateOrderStatus = async (orderId, newStatus, notes = '') => {
+  const updateStatus = async (orderId, newStatus) => {
     try {
-      console.log(`Updating order ${orderId} to status: ${newStatus}`);
       await driverAPI.updateDeliveryStatus(orderId, newStatus);
-      // Optimistically update local state so UI reflects immediately without a full reload
       setRoutes(prev => prev.map(route => ({
         ...route,
-        completed_orders: route.route_segments?.flatMap(s => s.orders || []).filter(o => o.id === orderId ? newStatus === 'delivered' : o.status === 'delivered').length ?? route.completed_orders,
         route_segments: route.route_segments?.map(seg => ({
-          ...seg,
-          orders: seg.orders?.map(o => o.id === orderId ? { ...o, status: newStatus } : o) || []
+          ...seg, orders: seg.orders?.map(o => o.id === orderId ? { ...o, status: newStatus } : o) || []
         }))
       })));
-    } catch (error) {
-      console.error('Failed to update order status:', error);
-      alert(`Failed to update order status: ${error.message}`);
-    }
+    } catch (e) { alert(`Failed: ${e.message}`); }
   };
 
-  // Navigate to a single stop
-  const navigateToStop = (order) => {
-    if (!order.latitude || !order.longitude) {
-      alert('No coordinates available for this stop');
-      return;
-    }
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${order.latitude},${order.longitude}&travelmode=driving`;
-    window.open(url, '_blank');
-  };
+  const totalOrders = routes.reduce((s, r) => s + (r.total_orders || 0), 0);
+  const completedOrders = routes.reduce((s, r) => {
+    return s + (r.route_segments?.flatMap(seg => seg.orders || []) || []).filter(o => o.status === 'delivered').length;
+  }, 0);
+  const overallPct = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
 
-  // Loading state
   if (loading && routes.length === 0) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading your routes...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+        <p className="text-gray-500 text-sm">Loading routes...</p>
       </div>
     );
   }
 
-  // Error state
   if (error && routes.length === 0) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-white mb-2">Failed to Load Routes</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <button 
-            onClick={loadDriverRoutes}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            Try Again
-          </button>
+      <div className="flex flex-col items-center justify-center py-32 gap-4 px-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-red-500/15 flex items-center justify-center">
+          <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
+        <p className="text-white font-semibold">Failed to Load Routes</p>
+        <p className="text-sm text-gray-500">{error}</p>
+        <button onClick={loadRoutes} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold rounded-xl transition">Try Again</button>
       </div>
     );
   }
 
-  // Main UI
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen pb-4">
       {/* Header */}
-      <div className="bg-white/5 border-b border-white/10 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Driver Routes</h1>
-              <p className="text-gray-400">
-                All Routes • {routes.length} assigned routes • 
-                {routes.reduce((sum, r) => sum + (r.total_orders || 0), 0)} total orders
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              {/* Live Updates Toggle */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-300">Live Updates</span>
-                <button 
-                  onClick={() => setLiveUpdateEnabled(!liveUpdateEnabled)}
-                  className={`w-12 h-6 rounded-full transition-colors ${
-                    liveUpdateEnabled ? 'bg-green-500' : 'bg-gray-300'
-                  } relative`}
-                >
-                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                    liveUpdateEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                  }`}></div>
-                </button>
-              </div>
-              
-              {/* Refresh Button */}
-              <button 
-                onClick={loadDriverRoutes}
-                className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                disabled={loading}
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                ) : (
-                  <span>🔄</span>
-                )}
-                <span>Refresh</span>
-              </button>
-            </div>
+      <div className="sticky top-0 z-10 backdrop-blur-xl bg-[#0a0e1a]/90 border-b border-[#1a2a45]">
+        <div className="px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between max-w-7xl mx-auto">
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-white">Route List</h1>
+            <p className="text-xs text-gray-500 mt-0.5">{routes.length} route{routes.length !== 1 ? 's' : ''} &middot; {totalOrders} orders</p>
           </div>
-          
-          {/* Live Update Status */}
-          {liveUpdateEnabled && (
-            <div className="mt-2 text-sm text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full inline-block">
-              🟢 Live updates enabled • Last updated: {lastUpdate.toLocaleTimeString()}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button onClick={() => setLiveUpdate(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition
+                ${liveUpdate ? 'bg-green-500/15 text-green-400 border border-green-500/30' : 'bg-[#111b2e] text-gray-500 border border-[#1a2a45]'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${liveUpdate ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+              Live
+            </button>
+            <button onClick={loadRoutes} disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500 hover:bg-orange-400 text-white transition disabled:opacity-50">
+              <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-            <div className="text-2xl font-bold text-blue-400">
-              {routes.length}
+      <div className="px-4 md:px-6 lg:px-8 pt-4 max-w-7xl mx-auto">
+        {/* Overall Progress */}
+        {totalOrders > 0 && (
+          <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300 font-medium">Today's Progress</span>
+              <span className="text-sm font-bold text-orange-400">{overallPct}%</span>
             </div>
-            <div className="text-gray-400">Active Routes</div>
-          </div>
-          
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-            <div className="text-2xl font-bold text-green-400">
-              {routes.reduce((sum, r) => sum + (r.completed_orders || 0), 0)}
+            <div className="h-2 bg-[#0a0e1a] rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-700" style={{ width: `${overallPct}%` }} />
             </div>
-            <div className="text-gray-400">Orders Completed</div>
-          </div>
-          
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-            <div className="text-2xl font-bold text-orange-400">
-              {routes.reduce((sum, r) => sum + (r.total_orders || 0) - (r.completed_orders || 0), 0)}
-            </div>
-            <div className="text-gray-400">Orders Remaining</div>
-          </div>
-          
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-            <div className="text-2xl font-bold text-purple-400">
-              {routes.reduce((sum, r) => sum + (r.depot_returns_needed || 1), 0)}
-            </div>
-            <div className="text-gray-400">Depot Returns</div>
-          </div>
-        </div>
-
-        {/* No Routes Message */}
-        {routes.length === 0 && (
-          <div className="text-center py-12 bg-white/5 border border-white/10 rounded-2xl">
-            <div className="text-6xl mb-4">🚛</div>
-            <h2 className="text-xl font-semibold mb-2 text-white">No Routes Assigned</h2>
-            <p className="text-gray-400 mb-4">Waiting for route assignments from dispatch</p>
-            <button 
-              onClick={loadDriverRoutes}
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-            >
-              Check for Updates
-            </button>
+            <p className="text-xs text-gray-600 mt-2">{completedOrders} delivered &middot; {totalOrders - completedOrders} remaining</p>
           </div>
         )}
 
-        {/* Routes List */}
-        <div className="space-y-6">
-          {routes.map((route) => (
-            <div key={route.id || route.route_id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              {/* Route Header */}
-              <div className="p-6 border-b border-white/10 bg-white/5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <div 
-                      className="w-4 h-4 rounded-full mr-3"
-                      style={{ backgroundColor: route.zone_color || '#FF6B35' }}
-                    ></div>
-                    <h2 className="text-xl font-bold text-white">{route.route_name}</h2>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${getStatusColor(route.status)}`}>
-                    {getStatusText(route.status)}
-                  </span>
-                </div>
-
-                {/* Route Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-200">{formatDuration(route.estimated_duration_minutes)}</div>
-                    <div className="text-sm text-gray-400">Duration</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-200">{formatDistance(route.total_distance_km)}</div>
-                    <div className="text-sm text-gray-400">Distance</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-200">{route.total_orders || 0}</div>
-                    <div className="text-sm text-gray-400">Total Orders</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-400">{route.depot_returns_needed || 1}</div>
-                    <div className="text-sm text-gray-400">Depot Returns</div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-400 mb-1">
-                    <span>Progress</span>
-                    <span>{route.completed_orders || 0} of {route.total_orders || 0} completed</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${route.total_orders > 0 ? ((route.completed_orders || 0) / route.total_orders) * 100 : 0}%` 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => navigateToRoute(route)}
-                    className="flex-1 bg-orange-500 text-white py-2 px-4 rounded-xl hover:bg-orange-600 transition-colors font-medium"
-                  >
-                    🧭 Navigate Full Route
-                  </button>
-                  <button
-                    onClick={() => setSelectedRoute(selectedRoute === route.id ? null : route.id)}
-                    className="flex-1 bg-white/10 border border-white/10 text-white py-2 px-4 rounded-xl hover:bg-white/20 transition-colors font-medium"
-                  >
-                    {selectedRoute === route.id ? 'Hide Details' : 'Show Details'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Route Details (Collapsible) */}
-              {selectedRoute === route.id && (
-                <div className="p-6">
-                  {/* Depot Return Segments */}
-                  <DepotReturnSegments 
-                    route={route} 
-                    onNavigateSegment={navigateToSegment}
-                  />
-
-                  {/* Orders List */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Order Details</h3>
-                    <div className="space-y-2">
-                      {route.route_segments?.flatMap(segment => segment.orders || []).map((order, index) => (
-                        <div key={order.id || index} className="flex items-start justify-between p-3 bg-white/5 border border-white/10 rounded-xl gap-2">
-                          <div className="flex items-start space-x-3 min-w-0">
-                            <div className="text-sm font-medium text-gray-400 mt-0.5">#{index + 1}</div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-white">{order.customer_name}</div>
-                              <div className="text-sm text-gray-400 truncate">{order.delivery_address}</div>
-                              <div className="text-xs text-gray-500">{order.postcode}</div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end space-y-1 shrink-0">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(order.status)}`}>
-                              {getStatusText(order.status)}
-                            </span>
-                            <button
-                              onClick={() => navigateToStop(order)}
-                              className="px-2 py-1 bg-orange-500 text-white text-xs rounded-lg hover:bg-orange-600 transition-colors"
-                            >
-                              🧭 Navigate
-                            </button>
-                            {order.status !== 'delivered' && order.status !== 'failed' && (
-                              <div className="flex space-x-1">
-                                <button
-                                  onClick={() => updateOrderStatus(order.id, 'delivered')}
-                                  className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
-                                >
-                                  ✓ Done
-                                </button>
-                                <button
-                                  onClick={() => updateOrderStatus(order.id, 'failed')}
-                                  className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
-                                >
-                                  ✗ Failed
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* Empty state */}
+        {routes.length === 0 && (
+          <div className="text-center py-20 bg-[#111b2e] border border-[#1a2a45] rounded-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-[#0a0e1a] flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
             </div>
+            <p className="text-white font-semibold mb-1">No Routes Assigned</p>
+            <p className="text-sm text-gray-500 mb-4">Waiting for dispatch</p>
+            <button onClick={loadRoutes} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold rounded-xl transition">Check for Updates</button>
+          </div>
+        )}
+
+        {/* Zone Cards */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {routes.map((route, i) => (
+            <ZoneCard key={route.id || route.route_id} route={route} index={i}
+              onNavigate={navRoute} onOrderNav={navStop} onOrderStatus={updateStatus} />
           ))}
         </div>
+
+        {liveUpdate && (
+          <div className="mt-4 text-center">
+            <span className="text-xs text-green-400/70 flex items-center justify-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Auto-refreshing &middot; {lastRefresh.toLocaleTimeString()}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
