@@ -361,22 +361,14 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
   const canProceedToReview = previewZones.length > 0;
   const canProceedToConfirm = generatedRoutes.length > 0 && generatedRoutes.every(r => r.driver_id);
   const dispatchedCount = generatedRoutes.filter(r => r.status === 'dispatched').length;
-  const activeTabMeta = tabs.find(t => t.id === activeTab) || tabs[0];
-
   const filteredPostcodes = availablePostcodes
     .filter(pc => (postcodeQuery ? pc.toLowerCase().includes(postcodeQuery.toLowerCase()) : true))
     .slice(0, 200);
 
   const selectedRoute = selectedRouteId ? generatedRoutes.find(r => r.route_id === selectedRouteId) : null;
 
-  const goNext = () => {
-    if (activeTab === 0 && canProceedToFilter) setActiveTab(1);
-    else if (activeTab === 1 && canProceedToReview) setActiveTab(2);
-    else if (activeTab === 2 && canProceedToConfirm) setActiveTab(3);
-  };
-  const goBack = () => setActiveTab(t => Math.max(0, t - 1));
   return (
-    <div className="min-h-screen pb-32 sm:pb-36 md:pb-40 [padding-bottom:max(7.5rem,env(safe-area-inset-bottom,0px)+5rem)]">
+    <div className="min-h-screen">
       <div className="sticky top-0 z-20 border-b border-white/10 bg-xr-bg/95 shadow-[0_1px_0_rgba(0,0,0,0.35)] backdrop-blur-xl">
         <div className="mx-auto max-w-[1600px] px-4 py-3 sm:px-6 md:px-8 md:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -977,58 +969,6 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
           </div>
         )}
           </main>
-        </div>
-      </div>
-
-      {/* Sticky bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-xr-bg/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 md:px-8">
-          <div className="flex items-center justify-between gap-3 sm:justify-start">
-            <div className="min-w-0">
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gray-600">CURRENT STEP</p>
-              <p className="truncate text-sm font-semibold text-white">{activeTabMeta.label}</p>
-            </div>
-            <div className="hidden text-xs text-gray-600 sm:block">
-              {activeTab === 0 && (canProceedToFilter ? 'Ready to continue to filtering.' : 'Upload orders to continue.')}
-              {activeTab === 1 && (canProceedToReview ? 'Clusters ready. Continue to review routes.' : 'Generate clusters to continue.')}
-              {activeTab === 2 && (canProceedToConfirm ? 'All routes assigned. Continue to confirm.' : 'Assign drivers to all routes.')}
-              {activeTab === 3 && (generatedRoutes.every(r => r.status === 'dispatched') ? 'Dispatch completed.' : 'Dispatch when ready.')}
-            </div>
-          </div>
-
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-            <SoftButton onClick={goBack} disabled={activeTab === 0} tone="blue">
-              Back
-            </SoftButton>
-            <div className="mx-1 hidden items-center gap-1.5 sm:flex" aria-label="Progress">
-              {[0, 1, 2, 3].map(i => (
-                <span
-                  key={i}
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    i === activeTab ? 'bg-[#F59E0B]' : i < activeTab ? 'bg-[#F59E0B]/40' : 'bg-white/10'
-                  }`}
-                />
-              ))}
-            </div>
-            {activeTab < 3 && (
-              <SoftButton
-                tone="primary"
-                onClick={goNext}
-                disabled={
-                  (activeTab === 0 && !canProceedToFilter) ||
-                  (activeTab === 1 && !canProceedToReview) ||
-                  (activeTab === 2 && !canProceedToConfirm)
-                }
-              >
-                Next
-              </SoftButton>
-            )}
-            {activeTab === 3 && !generatedRoutes.every(r => r.status === 'dispatched') && (
-              <SoftButton tone="blue" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                View summary
-              </SoftButton>
-            )}
-          </div>
         </div>
       </div>
     </div>
