@@ -4,7 +4,7 @@ import Orders from './components/Orders';
 import DriverRoutes from './components/DriverRoutes_IMPROVED';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // fallback for local dev
 
 const Ico = ({ d, className = 'w-5 h-5', fill = false }) => (
   <svg className={className} fill={fill ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke={fill ? 'none' : 'currentColor'} strokeWidth={1.8}>
