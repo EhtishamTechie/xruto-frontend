@@ -107,6 +107,40 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
 
 const inputCls = 'w-full bg-[#0a0e1a] border border-[#1a2a45] rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500/50 transition';
 
+const SectionCard = ({ title, subtitle, children, className = '' }) => (
+  <section
+    className={`rounded-2xl border border-[#1a2a45] bg-gradient-to-b from-[#111b2e] to-[#0d1524] p-5 shadow-lg shadow-black/25 sm:p-6 ${className}`}
+  >
+    {(title || subtitle) && (
+      <header className="mb-4 border-b border-white/5 pb-3 sm:mb-5 sm:pb-4">
+        {title && <h2 className="text-sm font-semibold tracking-tight text-white sm:text-base">{title}</h2>}
+        {subtitle && <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">{subtitle}</p>}
+      </header>
+    )}
+    {children}
+  </section>
+);
+
+const StatTile = ({ label, value, hint, tone = 'default' }) => {
+  const toneCls =
+    tone === 'blue'
+      ? 'text-blue-400'
+      : tone === 'green'
+        ? 'text-emerald-400'
+        : tone === 'amber'
+          ? 'text-amber-400'
+          : tone === 'orange'
+            ? 'text-orange-400'
+            : 'text-white';
+  return (
+    <div className="rounded-2xl border border-[#1a2a45] bg-[#0a0e1a]/80 p-4 ring-1 ring-inset ring-white/5 sm:p-5">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500 sm:text-xs">{label}</p>
+      <p className={`mt-1.5 text-2xl font-bold tabular-nums sm:text-3xl ${toneCls}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-gray-600">{hint}</p>}
+    </div>
+  );
+};
+
 const MyAdmin = ({ onNavigateToDashboard }) => {
   const [settings, setSettings] = useState({});
   const [depots, setDepots] = useState([]);
@@ -125,6 +159,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
   const [editDepotData, setEditDepotData] = useState({});
   const [showAddDepot, setShowAddDepot] = useState(false);
   const [showAddDriver, setShowAddDriver] = useState(false);
+  const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => { loadAdminData(); }, []);
 
@@ -274,195 +309,390 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
     </div>
   );
 
-  return (
-    <div className="min-h-screen pb-4">
-      {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur-xl bg-[#0a0e1a]/90 border-b border-[#1a2a45]">
-        <div className="px-4 md:px-6 lg:px-8 py-3 flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-lg md:text-xl font-bold text-white">My Admin</h1>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setHelpEnabled(!helpEnabled)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition ${helpEnabled ? 'text-blue-400 bg-blue-500/10' : 'text-gray-500 bg-[#111b2e]'}`}>
-              {helpEnabled ? 'Hide Tips' : 'Show Tips'}
-            </button>
-            <span className="text-xs text-gray-600">{saving ? 'Saving...' : success ? '\u2713 Saved' : ''}</span>
-          </div>
-        </div>
-      </div>
+  const adminTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'operations', label: 'Operations' },
+    { id: 'fleet', label: 'Fleet' },
+    { id: 'integrations', label: 'Integrations' },
+  ];
+  const navAppLabel = settings.navigation_app_preference === 'here' ? 'HERE Maps' : 'Google Maps';
 
-      {/* Alerts */}
-      <div className="px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+  return (
+    <div className="relative min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
+
+      {/* Sticky top: title + tools + tab nav */}
+      <header className="sticky top-0 z-20 border-b border-[#1a2a45] bg-[#0a0e1a]/95 shadow-[0_1px_0_rgba(0,0,0,0.35)] backdrop-blur-xl">
+        <div className="mx-auto max-w-[1600px] px-4 pt-4 sm:px-5 md:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">xRuto · Administration</p>
+              <h1 className="mt-0.5 text-xl font-bold tracking-tight text-white sm:text-2xl">Control center</h1>
+              <p className="mt-0.5 max-w-xl text-sm text-gray-500">Configure routing, fleet, and integrations. Colours and accents match your existing theme.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#1a2a45] bg-[#111b2e] px-2.5 py-1.5 text-[11px] text-gray-400 sm:text-xs">
+                <span className={`h-1.5 w-1.5 rounded-full ${saving ? 'animate-pulse bg-amber-400' : 'bg-emerald-400'}`} aria-hidden />
+                {saving ? 'Saving changes…' : success ? 'All changes applied' : 'In sync with server'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setHelpEnabled(!helpEnabled)}
+                className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition sm:px-4 ${helpEnabled ? 'bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/30' : 'bg-[#111b2e] text-gray-500 ring-1 ring-[#1a2a45] hover:text-gray-300'}`}
+              >
+                {helpEnabled ? 'Hide tips' : 'Show tips'}
+              </button>
+            </div>
+          </div>
+
+          <nav className="scrollbar-thin -mx-1 mt-5 flex gap-1 overflow-x-auto pb-1 md:mt-6" role="tablist" aria-label="Admin sections">
+            {adminTabs.map(tab => {
+              const active = activeSection === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveSection(tab.id)}
+                  className={`shrink-0 rounded-t-xl border px-3 py-2.5 text-left text-sm font-medium transition sm:min-w-[7.5rem] sm:px-4 ${
+                    active
+                      ? 'border-b-transparent border-[#1a2a45] bg-[#111b2e] text-white ring-1 ring-[#1a2a45]'
+                      : 'border-transparent text-gray-500 hover:bg-white/[0.04] hover:text-gray-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+        <div className="h-0 border-b border-[#1a2a45]" />
+      </header>
+
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-5 md:px-8">
         {showTooltip && (
-          <div className="mt-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-blue-400 text-xs flex justify-between">
-            {showTooltip}<button onClick={() => setShowTooltip(null)} className="text-blue-400/60 ml-2">&times;</button>
+          <div className="mt-4 flex justify-between gap-2 rounded-xl border border-blue-500/25 bg-blue-500/10 p-3 text-xs text-blue-300 sm:mt-5">
+            <span>{showTooltip}</span>
+            <button type="button" onClick={() => setShowTooltip(null)} className="shrink-0 text-blue-400/70 hover:text-blue-300" aria-label="Dismiss">
+              &times;
+            </button>
           </div>
         )}
         {error && (
-          <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs flex justify-between">
-            {error}<button onClick={() => setError('')} className="text-red-400/60 ml-2">&times;</button>
+          <div className="mt-4 flex justify-between gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-300 sm:mt-5">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError('')} className="shrink-0 text-red-400/70 hover:text-red-300" aria-label="Dismiss error">
+              &times;
+            </button>
           </div>
         )}
-      </div>
 
-      {/* Desktop: 2-col layout | Mobile: single column */}
-      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-5 md:gap-6">
-          {/* LEFT COLUMN: Settings */}
-          <div className="space-y-5">
-            {/* General Settings */}
-            <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5 space-y-4">
-              <h2 className="text-base font-semibold text-white mb-1">General Settings</h2>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Include Admin in Delivery Team</span>
-                <Toggle isOn={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
+        <div className="mt-4 space-y-5 pb-4 sm:mt-5 sm:space-y-6 md:pb-8">
+          {activeSection === 'overview' && (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <StatTile label="Depots" value={depots.length} hint="Active locations" tone="blue" />
+                <StatTile label="Drivers" value={drivers.length} hint="Fleet roster" tone="green" />
+                <StatTile label="Nav app" value={navAppLabel} hint="Default for routes" tone="amber" />
+                <StatTile
+                  label="Drivers today"
+                  value={String(settings.drivers_today_count ?? 3)}
+                  hint="Planned headcount"
+                  tone="orange"
+                />
               </div>
 
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">How Many Drivers Today</span>
-                <Dropdown value={settings.drivers_today_count || 3}
-                  options={[1,2,3,4,5,6,7,8,9,10,12,15,20].map(n => ({ value: n, label: `${n} driver${n>1?'s':''}` }))}
-                  onChange={v => handleSettingChange('drivers_today_count', v)} disabled={saving} placeholder="Select" />
-              </div>
-
-              <div className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl p-4 space-y-3">
-                <span className="text-sm text-gray-300 font-medium">Preferred Navigation App</span>
-                {helpEnabled && <p className="text-xs text-orange-400/70">Google Maps supports 25 stops, HERE Maps supports 50 stops per route</p>}
-                <Radio label="Google Maps" sublabel="25 Stops Per Route" checked={settings.navigation_app_preference === 'google'} onChange={() => handleSettingChange('navigation_app_preference', 'google')} disabled={saving} />
-                <Radio label="HERE Maps" sublabel="50 Stops Per Route" checked={settings.navigation_app_preference === 'here'} onChange={() => handleSettingChange('navigation_app_preference', 'here')} disabled={saving} />
-              </div>
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Enable Stock Refill Logic</span>
-                <Toggle isOn={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
-              </div>
-
-              <Stepper label="Deliveries in One Trip" value={settings.max_deliveries_per_route || 25} onChange={v => handleSettingChange('max_deliveries_per_route', v)} disabled={saving} helpText="Max deliveries per route" />
-              <Stepper label="Trips per Day" value={settings.max_routes_per_day || 10} onChange={v => handleSettingChange('max_routes_per_day', v)} disabled={saving} helpText="Max routes daily" />
-
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Auto-Assign Routes</span>
-                <Toggle isOn={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
-              </div>
-            </div>
-
-            {/* Fuel & Cost */}
-            <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5 space-y-4">
-              <h2 className="text-base font-semibold text-white">Fuel & Cost Settings</h2>
-              <div>
-                <label className="text-xs text-gray-500 mb-1.5 block">Fuel Price per Litre</label>
-                <div className="flex items-center bg-[#0a0e1a] border border-[#1a2a45] rounded-xl px-4 py-3">
-                  <span className="text-gray-500 font-bold mr-2">&pound;</span>
-                  <input type="number" step="0.01" min="0" value={settings.default_fuel_price || '1.45'}
-                    onChange={e => handleSettingChange('default_fuel_price', e.target.value)}
-                    className="bg-transparent w-full text-white text-sm focus:outline-none" disabled={saving} />
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <SectionCard title="At a glance" subtitle="Key operational switches">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:p-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400">Auto-assign routes</p>
+                          <p className="text-[11px] text-gray-600">Distribute work automatically when possible</p>
+                        </div>
+                        <Toggle isOn={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:p-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400">Stock refill logic</p>
+                          <p className="text-[11px] text-gray-600">Enable depot return handling</p>
+                        </div>
+                        <Toggle isOn={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:col-span-2 sm:p-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-400">Admin in delivery team</p>
+                          <p className="text-[11px] text-gray-600">Include the admin user as a driver in planning</p>
+                        </div>
+                        <Toggle isOn={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
+                      </div>
+                    </div>
+                  </SectionCard>
                 </div>
+                <SectionCard title="Next steps" subtitle="Work faster in this workspace">
+                  <ol className="list-inside list-decimal space-y-2.5 text-sm text-gray-400">
+                    <li>Fine-tune <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('operations')}>operations</button> and fuel assumptions.</li>
+                    <li>Keep <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('fleet')}>depots and drivers</button> up to date.</li>
+                    <li>Connect channels under <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('integrations')}>integrations</button>.</li>
+                  </ol>
+                </SectionCard>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Route Optimization</span>
-                <Dropdown value={settings.route_optimization_method || 'distance'}
-                  options={[{ value: 'distance', label: 'Distance' }, { value: 'time', label: 'Time' }, { value: 'fuel_cost', label: 'Fuel Cost' }]}
-                  onChange={v => handleSettingChange('route_optimization_method', v)} disabled={saving} placeholder="Method" />
-              </div>
-              <SlideButton label={saving ? 'Saving...' : 'Slide To Save Configuration'} onConfirm={() => setSuccess('Configuration saved!')} loading={saving} />
-            </div>
+            </>
+          )}
 
-            {/* Integration Settings */}
-            <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5 space-y-4">
-              <h2 className="text-base font-semibold text-white">Integration Settings</h2>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">WooCommerce Integration</span>
-                <Toggle isOn={settings.woocommerce_integration_enabled || false} onChange={v => handleSettingChange('woocommerce_integration_enabled', v)} disabled={saving} />
-              </div>
-              {settings.woocommerce_integration_enabled && (
-                <div className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl p-4 space-y-3">
-                  <input className={inputCls} type="url" placeholder="Webhook URL" value={settings.webhook_url || ''} onChange={e => handleSettingChange('webhook_url', e.target.value)} disabled={saving} />
-                  <Stepper label="Sync Frequency (min)" value={settings.sync_frequency_minutes || 15} onChange={v => handleSettingChange('sync_frequency_minutes', v)} disabled={saving} min={5} max={120} />
+          {activeSection === 'operations' && (
+            <div className="grid gap-5 xl:grid-cols-2">
+              <SectionCard title="Routing & capacity" subtitle="How routes are built and limited">
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:py-1">
+                    <span className="text-sm text-gray-300">How many drivers today</span>
+                    <div className="w-full min-w-0 sm:max-w-[220px]">
+                      <Dropdown
+                        value={settings.drivers_today_count || 3}
+                        options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map(n => ({ value: n, label: `${n} driver${n > 1 ? 's' : ''}` }))}
+                        onChange={v => handleSettingChange('drivers_today_count', v)}
+                        disabled={saving}
+                        placeholder="Select"
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-4">
+                    <span className="text-sm font-medium text-gray-300">Preferred navigation app</span>
+                    {helpEnabled && <p className="mb-2 mt-1 text-xs text-orange-400/80">Google Maps supports 25 stops, HERE Maps supports 50 stops per route</p>}
+                    <div className="mt-2 space-y-2">
+                      <Radio label="Google Maps" sublabel="25 Stops Per Route" checked={settings.navigation_app_preference === 'google'} onChange={() => handleSettingChange('navigation_app_preference', 'google')} disabled={saving} />
+                      <Radio label="HERE Maps" sublabel="50 Stops Per Route" checked={settings.navigation_app_preference === 'here'} onChange={() => handleSettingChange('navigation_app_preference', 'here')} disabled={saving} />
+                    </div>
+                  </div>
+                  <Stepper
+                    label="Deliveries in one trip"
+                    value={settings.max_deliveries_per_route || 25}
+                    onChange={v => handleSettingChange('max_deliveries_per_route', v)}
+                    disabled={saving}
+                    helpText="Max deliveries per route"
+                  />
+                  <Stepper
+                    label="Trips per day"
+                    value={settings.max_routes_per_day || 10}
+                    onChange={v => handleSettingChange('max_routes_per_day', v)}
+                    disabled={saving}
+                    helpText="Max routes daily"
+                  />
+                  <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                    <span className="text-sm text-gray-300">Auto-assign routes</span>
+                    <Toggle isOn={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
+                  </div>
                 </div>
-              )}
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Real-time Tracking</span>
-                <Toggle isOn={settings.enable_real_time_tracking || false} onChange={v => handleSettingChange('enable_real_time_tracking', v)} disabled={saving} />
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Customer Notifications</span>
-                <Toggle isOn={settings.customer_notifications !== false} onChange={v => handleSettingChange('customer_notifications', v)} disabled={saving} />
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-300">Driver Mobile App</span>
-                <Toggle isOn={settings.driver_app_enabled !== false} onChange={v => handleSettingChange('driver_app_enabled', v)} disabled={saving} />
+              </SectionCard>
+
+              <div className="space-y-5">
+                <SectionCard title="Fuel & cost" subtitle="Model spend for smarter optimisation">
+                  <div>
+                    <label className="mb-1.5 block text-xs text-gray-500">Fuel price per litre</label>
+                    <div className="flex items-center rounded-xl border border-[#1a2a45] bg-[#0a0e1a] px-4 py-3">
+                      <span className="mr-2 font-bold text-gray-500">&pound;</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={settings.default_fuel_price || '1.45'}
+                        onChange={e => handleSettingChange('default_fuel_price', e.target.value)}
+                        className="w-full bg-transparent text-sm text-white focus:outline-none"
+                        disabled={saving}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:py-1">
+                    <span className="text-sm text-gray-300">Route optimization</span>
+                    <div className="w-full min-w-0 sm:max-w-[220px]">
+                      <Dropdown
+                        value={settings.route_optimization_method || 'distance'}
+                        options={[
+                          { value: 'distance', label: 'Distance' },
+                          { value: 'time', label: 'Time' },
+                          { value: 'fuel_cost', label: 'Fuel cost' },
+                        ]}
+                        onChange={v => handleSettingChange('route_optimization_method', v)}
+                        disabled={saving}
+                        placeholder="Method"
+                      />
+                    </div>
+                  </div>
+                  <div className="pt-1">
+                    <SlideButton
+                      label={saving ? 'Saving…' : 'Slide to save configuration'}
+                      onConfirm={() => setSuccess('Configuration saved!')}
+                      loading={saving}
+                    />
+                  </div>
+                </SectionCard>
+                <SectionCard title="Inventory behaviour" subtitle="Refill and admin participation">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm text-gray-300">Enable stock refill logic</span>
+                    <Toggle isOn={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-3">
+                    <span className="text-sm text-gray-300">Include admin in delivery team</span>
+                    <Toggle isOn={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
+                  </div>
+                </SectionCard>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* RIGHT COLUMN: Depot + Driver Management */}
-          <div className="space-y-5">
-            {/* Depot Management */}
-            <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-white">Depot Management</h2>
-                <button onClick={() => setShowAddDepot(v => !v)} className="text-xs font-medium text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg hover:bg-orange-500/20 transition">
-                  {showAddDepot ? 'Cancel' : '+ Add Depot'}
-                </button>
-              </div>
-
-              {depots.map(depot => <DepotCard key={depot.id} depot={depot} />)}
-
-              {showAddDepot && (
-                <div className="bg-gradient-to-br from-blue-500/5 to-blue-600/5 border border-blue-500/20 rounded-xl p-4 space-y-3">
-                  <h3 className="text-sm font-medium text-blue-400">New Depot</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={inputCls} placeholder="Depot Name" value={newDepot.name} onChange={e => setNewDepot(p => ({ ...p, name: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} placeholder="City" value={newDepot.city} onChange={e => setNewDepot(p => ({ ...p, city: e.target.value }))} disabled={saving} />
-                  </div>
-                  <input className={inputCls} placeholder="Full Address" value={newDepot.address} onChange={e => setNewDepot(p => ({ ...p, address: e.target.value }))} disabled={saving} />
-                  <div className="grid grid-cols-3 gap-3">
-                    <input className={inputCls} placeholder="Postcode" value={newDepot.postcode} onChange={e => setNewDepot(p => ({ ...p, postcode: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} type="number" placeholder="Capacity" value={newDepot.capacity} onChange={e => setNewDepot(p => ({ ...p, capacity: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} placeholder="Phone" value={newDepot.contactPhone} onChange={e => setNewDepot(p => ({ ...p, contactPhone: e.target.value }))} disabled={saving} />
-                  </div>
-                  <input className={inputCls} type="email" placeholder="Contact Email" value={newDepot.contactEmail} onChange={e => setNewDepot(p => ({ ...p, contactEmail: e.target.value }))} disabled={saving} />
-                  <SlideButton label={saving ? 'Adding...' : 'Slide To Add Depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !newDepot.address} />
+          {activeSection === 'fleet' && (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <SectionCard
+                title="Depots"
+                subtitle="Where vehicles start and return"
+                className="min-h-0"
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-gray-500">{depots.length} location{depots.length !== 1 ? 's' : ''}</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDepot(v => !v)}
+                    className="rounded-lg bg-orange-500/15 px-3 py-1.5 text-xs font-semibold text-orange-400 ring-1 ring-orange-500/25 transition hover:bg-orange-500/25"
+                  >
+                    {showAddDepot ? 'Cancel' : 'Add depot'}
+                  </button>
                 </div>
-              )}
-            </div>
-
-            {/* Driver Management */}
-            <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-white">Driver Management</h2>
-                <button onClick={() => setShowAddDriver(v => !v)} className="text-xs font-medium text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg hover:bg-orange-500/20 transition">
-                  {showAddDriver ? 'Cancel' : '+ Add Driver'}
-                </button>
-              </div>
-
-              {drivers.map(driver => <DriverCard key={driver.id} driver={driver} />)}
-
-              {showAddDriver && (
-                <div className="bg-gradient-to-br from-blue-500/5 to-blue-600/5 border border-blue-500/20 rounded-xl p-4 space-y-3">
-                  <h3 className="text-sm font-medium text-blue-400">New Driver</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={inputCls} placeholder="First Name" value={newDriver.firstName} onChange={e => setNewDriver(p => ({ ...p, firstName: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} placeholder="Last Name" value={newDriver.lastName} onChange={e => setNewDriver(p => ({ ...p, lastName: e.target.value }))} disabled={saving} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={inputCls} type="email" placeholder="Email (for login)" value={newDriver.email} onChange={e => setNewDriver(p => ({ ...p, email: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} type="password" placeholder="Password" value={newDriver.password} onChange={e => setNewDriver(p => ({ ...p, password: e.target.value }))} disabled={saving} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={inputCls} placeholder="Phone" value={newDriver.phone} onChange={e => setNewDriver(p => ({ ...p, phone: e.target.value }))} disabled={saving} />
-                    <Dropdown value={newDriver.depotId} options={[{ value: '', label: 'No Depot' }, ...depots.map(d => ({ value: d.id, label: d.name }))]} onChange={v => setNewDriver(p => ({ ...p, depotId: v }))} placeholder="Select Depot" disabled={saving} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <input className={inputCls} type="number" placeholder="MPG" value={newDriver.mpg} onChange={e => setNewDriver(p => ({ ...p, mpg: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} type="number" placeholder="Vehicle Cap" value={newDriver.vehicleCapacity} onChange={e => setNewDriver(p => ({ ...p, vehicleCapacity: e.target.value }))} disabled={saving} />
-                    <input className={inputCls} placeholder="License Plate" value={newDriver.licensePlate} onChange={e => setNewDriver(p => ({ ...p, licensePlate: e.target.value }))} disabled={saving} />
-                  </div>
-                  <SlideButton label={saving ? 'Adding...' : 'Slide To Add Driver'} onConfirm={handleAddDriver} loading={saving} disabled={!newDriver.firstName || !newDriver.lastName || !newDriver.email} />
+                <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
+                  {depots.map(depot => (
+                    <DepotCard key={depot.id} depot={depot} />
+                  ))}
                 </div>
-              )}
+                {showAddDepot && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/5 to-blue-600/5 p-4">
+                    <h3 className="text-sm font-medium text-blue-400">New depot</h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input className={inputCls} placeholder="Depot name" value={newDepot.name} onChange={e => setNewDepot(p => ({ ...p, name: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} placeholder="City" value={newDepot.city} onChange={e => setNewDepot(p => ({ ...p, city: e.target.value }))} disabled={saving} />
+                    </div>
+                    <input className={inputCls} placeholder="Full address" value={newDepot.address} onChange={e => setNewDepot(p => ({ ...p, address: e.target.value }))} disabled={saving} />
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <input className={inputCls} placeholder="Postcode" value={newDepot.postcode} onChange={e => setNewDepot(p => ({ ...p, postcode: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} type="number" placeholder="Capacity" value={newDepot.capacity} onChange={e => setNewDepot(p => ({ ...p, capacity: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} placeholder="Phone" value={newDepot.contactPhone} onChange={e => setNewDepot(p => ({ ...p, contactPhone: e.target.value }))} disabled={saving} />
+                    </div>
+                    <input className={inputCls} type="email" placeholder="Contact email" value={newDepot.contactEmail} onChange={e => setNewDepot(p => ({ ...p, contactEmail: e.target.value }))} disabled={saving} />
+                    <SlideButton label={saving ? 'Adding…' : 'Slide to add depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !newDepot.address} />
+                  </div>
+                )}
+              </SectionCard>
+
+              <SectionCard
+                title="Drivers"
+                subtitle="People and vehicles on the road"
+                className="min-h-0"
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-gray-500">{drivers.length} driver{drivers.length !== 1 ? 's' : ''}</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDriver(v => !v)}
+                    className="rounded-lg bg-orange-500/15 px-3 py-1.5 text-xs font-semibold text-orange-400 ring-1 ring-orange-500/25 transition hover:bg-orange-500/25"
+                  >
+                    {showAddDriver ? 'Cancel' : 'Add driver'}
+                  </button>
+                </div>
+                <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
+                  {drivers.map(driver => (
+                    <DriverCard key={driver.id} driver={driver} />
+                  ))}
+                </div>
+                {showAddDriver && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/5 to-blue-600/5 p-4">
+                    <h3 className="text-sm font-medium text-blue-400">New driver</h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input className={inputCls} placeholder="First name" value={newDriver.firstName} onChange={e => setNewDriver(p => ({ ...p, firstName: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} placeholder="Last name" value={newDriver.lastName} onChange={e => setNewDriver(p => ({ ...p, lastName: e.target.value }))} disabled={saving} />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input className={inputCls} type="email" placeholder="Email (login)" value={newDriver.email} onChange={e => setNewDriver(p => ({ ...p, email: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} type="password" placeholder="Password" value={newDriver.password} onChange={e => setNewDriver(p => ({ ...p, password: e.target.value }))} disabled={saving} />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input className={inputCls} placeholder="Phone" value={newDriver.phone} onChange={e => setNewDriver(p => ({ ...p, phone: e.target.value }))} disabled={saving} />
+                      <Dropdown
+                        value={newDriver.depotId}
+                        options={[{ value: '', label: 'No depot' }, ...depots.map(d => ({ value: d.id, label: d.name }))]}
+                        onChange={v => setNewDriver(p => ({ ...p, depotId: v }))}
+                        placeholder="Select depot"
+                        disabled={saving}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <input className={inputCls} type="number" placeholder="MPG" value={newDriver.mpg} onChange={e => setNewDriver(p => ({ ...p, mpg: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} type="number" placeholder="Vehicle capacity" value={newDriver.vehicleCapacity} onChange={e => setNewDriver(p => ({ ...p, vehicleCapacity: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} placeholder="License plate" value={newDriver.licensePlate} onChange={e => setNewDriver(p => ({ ...p, licensePlate: e.target.value }))} disabled={saving} />
+                    </div>
+                    <SlideButton
+                      label={saving ? 'Adding…' : 'Slide to add driver'}
+                      onConfirm={handleAddDriver}
+                      loading={saving}
+                      disabled={!newDriver.firstName || !newDriver.lastName || !newDriver.email}
+                    />
+                  </div>
+                )}
+              </SectionCard>
             </div>
-          </div>
+          )}
+
+          {activeSection === 'integrations' && (
+            <div className="max-w-4xl">
+              <SectionCard title="Channels & comms" subtitle="E‑commerce, tracking, and driver surfaces">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-sm text-gray-300">WooCommerce</span>
+                    <Toggle
+                      isOn={settings.woocommerce_integration_enabled || false}
+                      onChange={v => handleSettingChange('woocommerce_integration_enabled', v)}
+                      disabled={saving}
+                    />
+                  </div>
+                  {settings.woocommerce_integration_enabled && (
+                    <div className="space-y-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-4">
+                      <input
+                        className={inputCls}
+                        type="url"
+                        placeholder="Webhook URL"
+                        value={settings.webhook_url || ''}
+                        onChange={e => handleSettingChange('webhook_url', e.target.value)}
+                        disabled={saving}
+                      />
+                      <Stepper
+                        label="Sync frequency (min)"
+                        value={settings.sync_frequency_minutes || 15}
+                        onChange={v => handleSettingChange('sync_frequency_minutes', v)}
+                        disabled={saving}
+                        min={5}
+                        max={120}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                    <span className="text-sm text-gray-300">Real-time tracking</span>
+                    <Toggle isOn={settings.enable_real_time_tracking || false} onChange={v => handleSettingChange('enable_real_time_tracking', v)} disabled={saving} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Customer notifications</span>
+                    <Toggle
+                      isOn={settings.customer_notifications !== false}
+                      onChange={v => handleSettingChange('customer_notifications', v)}
+                      disabled={saving}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">Driver mobile app</span>
+                    <Toggle isOn={settings.driver_app_enabled !== false} onChange={v => handleSettingChange('driver_app_enabled', v)} disabled={saving} />
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+          )}
         </div>
       </div>
     </div>

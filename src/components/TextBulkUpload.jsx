@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, FileText, AlertCircle, CheckCircle, X, Loader, Plus } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, X, Loader, Plus, ChevronDown } from 'lucide-react';
 
 const TextBulkUpload = ({ onOrdersUploaded }) => {
   const [textInput, setTextInput] = useState('');
@@ -46,26 +46,27 @@ Weight: 2.8kg`;
 
   const parseTextOrders = (text) => {
     const orders = [];
-    
-    // Split by "Order X:" pattern to get individual orders
-    const orderBlocks = text.split(/Order\s+\d+:/i).filter(block => block.trim().length > 0);
-    
-    orderBlocks.forEach((block, index) => {
-      const lines = block.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      
+    const orderBlocks = text.split(/Order\s+\d+:/i).filter((block) => block.trim().length > 0);
+
+    orderBlocks.forEach((block) => {
+      const lines = block
+        .trim()
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
       const order = {
         delivery_date: new Date().toISOString().split('T')[0],
-        status: 'pending'
+        status: 'pending',
       };
-      
-      // Parse each line for order data
-      lines.forEach(line => {
+
+      lines.forEach((line) => {
         const colonIndex = line.indexOf(':');
         if (colonIndex === -1) return;
-        
+
         const key = line.substring(0, colonIndex).trim().toLowerCase();
         const value = line.substring(colonIndex + 1).trim();
-        
+
         switch (key) {
           case 'customer':
             order.customer_name = value;
@@ -91,25 +92,26 @@ Weight: 2.8kg`;
           case 'longitude':
             order.longitude = parseFloat(value) || null;
             break;
-          case 'value':
-            // Remove £ symbol and parse
+          case 'value': {
             const cleanValue = value.replace(/[£$,]/g, '');
             order.order_value = parseFloat(cleanValue) || 0;
             break;
-          case 'weight':
-            // Remove units and parse
+          }
+          case 'weight': {
             const cleanWeight = value.replace(/[a-zA-Z]/g, '');
             order.weight = parseFloat(cleanWeight) || 0;
             break;
+          }
+          default:
+            break;
         }
       });
-      
-      // Validate order has minimum required fields
+
       if (order.customer_name && order.delivery_address) {
         orders.push(order);
       }
     });
-    
+
     return orders;
   };
 
@@ -121,7 +123,7 @@ Weight: 2.8kg`;
 
     try {
       const parsed = parseTextOrders(textInput);
-      
+
       if (parsed.length === 0) {
         setError('No valid orders found. Please check the format.');
         return;
@@ -129,8 +131,8 @@ Weight: 2.8kg`;
 
       setPreviewOrders(parsed);
       setError(null);
-    } catch (error) {
-      console.error('Parse error:', error);
+    } catch (e) {
+      console.error('Parse error:', e);
       setError('Failed to parse orders. Please check the format.');
     }
   };
@@ -149,10 +151,8 @@ Weight: 2.8kg`;
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_BASE_URL}/orders/upload-text`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orders: previewOrders })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders: previewOrders }),
       });
 
       const data = await response.json();
@@ -163,22 +163,20 @@ Weight: 2.8kg`;
           message: data.message,
           extractedCount: previewOrders.length,
           insertedCount: data.insertedCount || previewOrders.length,
-          orders: data.orders || previewOrders
+          orders: data.orders || previewOrders,
         });
 
-        // Notify parent component about new orders
         if (onOrdersUploaded && data.orders) {
           onOrdersUploaded(data.orders);
         }
 
-        // Clear form
         setTextInput('');
         setPreviewOrders([]);
       } else {
         setError(data.message || 'Failed to upload orders');
       }
-    } catch (error) {
-      console.error('Upload error:', error);
+    } catch (err) {
+      console.error('Upload error:', err);
       setError('Failed to upload orders. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -198,170 +196,151 @@ Weight: 2.8kg`;
     setPreviewOrders([]);
   };
 
+  const [focusOnce, setFocusOnce] = useState(false);
+  const inputBarCls =
+    'w-full min-h-[220px] max-h-[min(60vh,680px)] rounded-2xl border border-white/10 bg-xr-surface px-4 py-3 font-mono text-[13px] leading-relaxed text-gray-200 placeholder-gray-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:ring-offset-0 focus:border-[#F59E0B]/40 resize-y';
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Bulk Text Order Upload</h2>
-        <p className="text-gray-600">
-          Copy and paste orders directly from Word, Excel, or any text format. 
-          Much faster than PDF conversion!
+    <div className="glass-card min-w-0 overflow-hidden rounded-2xl">
+      <div className="border-b border-white/5 px-4 py-3 sm:px-5 sm:py-3.5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#F59E0B]/80">Text import</p>
+        <h3 className="text-sm font-semibold text-white sm:text-base">Bulk text upload</h3>
+        <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">
+          Paste from Word, Excel, or any plain text. Faster than reformatting PDFs.
         </p>
       </div>
 
-      {/* Text Input Area */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Order Text Data
+      <div className="p-4 sm:p-5">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <label className="text-xs font-medium text-gray-400" htmlFor="order-text-bulk">
+            Order text
           </label>
           <button
+            type="button"
             onClick={insertSample}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+            className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#1a2a45] bg-[#0a0e1a] px-2.5 py-1.5 text-xs font-medium text-orange-400/90 transition hover:border-orange-500/30 hover:bg-orange-500/10"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Insert Sample
+            <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+            Insert sample
           </button>
         </div>
-        
+
         <textarea
+          id="order-text-bulk"
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
-          placeholder="Paste your orders here in the format shown in the sample..."
-          className="w-full h-96 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm resize-y text-gray-900"
+          onFocus={() => { setFocusOnce(true); setTimeout(() => setFocusOnce(false), 900); }}
+          placeholder="Paste orders here. Each block should start with Order 1: … and use lines like Customer: … Address: …"
+          className={`${inputBarCls} ${focusOnce ? 'animate-glow-once' : ''}`}
           disabled={isProcessing}
         />
-        
-        <div className="mt-2 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            {textInput.length} characters
+
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="flex items-center justify-end">
+            <span className="text-[11px] text-gray-500 tabular-nums sm:text-xs">{textInput.length} characters</span>
           </div>
-          <div className="space-x-2">
-            <button
-              onClick={handlePreview}
-              disabled={isProcessing || !textInput.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              Preview Orders
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={isProcessing || !textInput.trim()}
+            className="h-12 w-full rounded-xl bg-[#F59E0B] px-4 text-sm font-bold text-black shadow-panel transition duration-150 hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Preview orders
+          </button>
         </div>
       </div>
 
-      {/* Preview Section */}
       {previewOrders.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-medium text-blue-800 mb-3">
-            Preview: {previewOrders.length} Orders Found
-          </h3>
-          
-          <div className="max-h-40 overflow-y-auto mb-4">
-            {previewOrders.slice(0, 10).map((order, index) => (
-              <div key={index} className="text-sm text-blue-700 py-1 border-b border-blue-200 last:border-b-0">
-                <strong>{order.customer_name}</strong> - {order.delivery_address} ({order.postcode}) - £{order.order_value}
+        <div className="mx-4 mb-4 space-y-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 sm:mx-5 sm:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-blue-200">Preview: {previewOrders.length} order{previewOrders.length !== 1 ? 's' : ''}</h4>
+            <span className="shrink-0 rounded-md bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-300">Ready to upload</span>
+          </div>
+          <div className="max-h-32 overflow-y-auto rounded-lg border border-white/5 bg-[#0a0e1a] p-2 text-xs text-gray-300 scrollbar-thin">
+            {previewOrders.slice(0, 8).map((order, index) => (
+              <div key={index} className="border-b border-white/5 py-1.5 last:border-0 last:pb-0">
+                <span className="font-medium text-white">{order.customer_name}</span>
+                <span className="text-gray-500"> — </span>
+                <span className="text-gray-400 line-clamp-1">{order.delivery_address}</span>
+                {order.postcode && <span className="ml-1 text-gray-500">({order.postcode})</span>}
+                {order.order_value != null && (
+                  <span className="ml-1 text-orange-400/90">· £{order.order_value}</span>
+                )}
               </div>
             ))}
-            {previewOrders.length > 10 && (
-              <div className="text-sm text-blue-600 pt-2">
-                ...and {previewOrders.length - 10} more orders
-              </div>
+            {previewOrders.length > 8 && (
+              <p className="pt-1 text-[11px] text-gray-500">…and {previewOrders.length - 8} more</p>
             )}
           </div>
-          
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={isProcessing}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 transition enabled:hover:from-emerald-500 enabled:hover:to-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {isProcessing ? (
               <>
-                <Loader className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
+                <Loader className="h-4 w-4 shrink-0 animate-spin" />
+                Uploading…
               </>
             ) : (
               <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Upload {previewOrders.length} Orders
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Upload {previewOrders.length} order{previewOrders.length !== 1 ? 's' : ''}
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* Error Display */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-red-800">Upload Error</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
-            </div>
-            <button
-              onClick={clearResults}
-              className="text-red-500 hover:text-red-700 ml-3"
-            >
-              <X className="w-4 h-4" />
-            </button>
+        <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 sm:mx-5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-red-200">Error</p>
+            <p className="text-xs text-red-300/90">{error}</p>
           </div>
+          <button type="button" onClick={clearResults} className="shrink-0 text-red-400/80 hover:text-red-300" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      {/* Success Display */}
-      {uploadResult && uploadResult.success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-start">
-            <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-green-800">Upload Successful</h3>
-              <p className="text-sm text-green-700 mt-1">{uploadResult.message}</p>
-              
-              <div className="mt-3 text-sm text-green-600">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <strong>Orders Processed:</strong> {uploadResult.extractedCount}
-                  </div>
-                  <div>
-                    <strong>Orders Added:</strong> {uploadResult.insertedCount}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={clearResults}
-              className="text-green-500 hover:text-green-700 ml-3"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {uploadResult?.success && (
+        <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 sm:mx-5">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <div className="min-w-0 flex-1 text-xs text-emerald-200/90">
+            <p className="font-medium text-emerald-100">{uploadResult.message}</p>
+            <p className="mt-1 text-emerald-200/80">
+              Processed {uploadResult.extractedCount} · Added {uploadResult.insertedCount}
+            </p>
           </div>
+          <button type="button" onClick={clearResults} className="shrink-0 text-emerald-400/80 hover:text-emerald-300" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      {/* Format Guide */}
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="flex items-start">
-          <FileText className="w-5 h-5 text-gray-500 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-800">Required Format</h3>
-            <div className="text-sm text-gray-600 mt-2 space-y-1">
-              <div>• Start each order with "Order X:" (where X is any number)</div>
-              <div>• Use format: "Field: Value" on separate lines</div>
-              <div>• Required fields: Customer, Address</div>
-              <div>• Optional fields: Email, Phone, Postcode, City, Latitude, Longitude, Value, Weight</div>
-              <div>• Separate orders with blank lines</div>
-            </div>
-            
-            <div className="mt-3 text-xs text-gray-500 bg-gray-100 p-2 rounded font-mono">
-              Order 1:<br/>
-              Customer: John Smith<br/>
-              Email: john@email.com<br/>
-              Phone: 01925100000<br/>
-              Address: 123 Main St, Warrington WA1 2AB<br/>
-              Value: £45.99<br/>
-              Weight: 2.5kg
-            </div>
-          </div>
+      <details className="group border-t border-white/5 bg-[#0a0e1a]/50">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-xs font-medium text-gray-400 transition hover:text-gray-300 sm:px-5">
+          <span className="inline-flex items-center gap-2">
+            <FileText className="h-4 w-4 text-gray-500" />
+            Format guide
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-gray-500 transition group-open:rotate-180" />
+        </summary>
+        <div className="space-y-2 px-4 pb-4 text-xs text-gray-500 sm:px-5">
+          <p>Start each order with <code className="rounded bg-white/5 px-1 text-gray-300">Order 1:</code> (any number). Use <code className="rounded bg-white/5 px-1">Field: value</code> on separate lines.</p>
+          <p>Required: <span className="text-gray-400">Customer</span>, <span className="text-gray-400">Address</span>. Optional: Email, Phone, Postcode, City, coordinates, value, weight.</p>
+          <pre className="mt-2 overflow-x-auto rounded-lg border border-[#1a2a45] bg-[#0a0e1a] p-2.5 font-mono text-[11px] leading-relaxed text-gray-400">
+            {`Order 1:
+Customer: John Smith
+Address: 123 Main St, Warrington WA1 2AB
+Value: £45.99
+Weight: 2.5kg`}
+          </pre>
         </div>
-      </div>
+      </details>
     </div>
   );
 };

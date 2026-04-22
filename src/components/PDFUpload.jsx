@@ -157,200 +157,147 @@ const PDFUpload = ({ onOrdersUploaded }) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Orders from PDF</h2>
-        <p className="text-gray-600">
-          Upload a PDF file containing order information. The system will automatically extract 
-          customer details, addresses, and create delivery orders.
-        </p>
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-[#1a2a45] bg-gradient-to-b from-[#111b2e] to-[#0c1320] shadow-lg shadow-black/30">
+      <div className="border-b border-white/5 px-4 py-3 sm:px-5 sm:py-3.5">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">File import</p>
+        <h3 className="text-sm font-semibold text-white sm:text-base">PDF upload</h3>
+        <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">Drop a PDF; we extract customers, addresses, and line items (text-based PDFs work best).</p>
       </div>
 
-      {/* Upload Area */}
-      <div
-        className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
-          isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
-        } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => !isUploading && fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={isUploading}
-        />
-
-        {isUploading ? (
-          <div className="flex flex-col items-center">
-            <Loader className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-            <p className="text-lg font-medium text-gray-700">Processing PDF...</p>
-            <p className="text-sm text-gray-500">This may take a few moments</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <Upload className="w-12 h-12 text-gray-400 mb-4" />
-            <p className="text-lg font-medium text-gray-700 mb-2">
-              Drop your PDF file here, or click to browse
-            </p>
-            <p className="text-sm text-gray-500">
-              Supports PDF files up to 10MB
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Test Orders Button */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={generateTestOrders}
-          disabled={isUploading}
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+      <div className="p-4 sm:p-5">
+        <div
+          className={`relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition sm:p-8 ${
+            isDragging
+              ? 'border-orange-500/60 bg-orange-500/10'
+              : 'border-[#1a2a45] bg-[#0a0e1a] hover:border-orange-500/30'
+          } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !isUploading && fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && !isUploading && fileInputRef.current?.click()}
         >
-          Generate Test Orders
-        </button>
-        <p className="text-xs text-gray-500 mt-1">
-          Create sample orders for testing (no PDF required)
-        </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={isUploading}
+          />
+
+          {isUploading ? (
+            <div className="flex flex-col items-center">
+              <Loader className="mb-3 h-10 w-10 animate-spin text-blue-400" />
+              <p className="text-sm font-medium text-white">Processing PDF…</p>
+              <p className="text-xs text-gray-500">This may take a few moments</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <Upload className="mb-3 h-10 w-10 text-gray-500" />
+              <p className="mb-1 text-sm font-medium text-gray-200">Drop PDF here or click to browse</p>
+              <p className="text-xs text-gray-500">Up to 10&nbsp;MB</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 flex flex-col items-stretch gap-1 sm:items-center">
+          <button
+            type="button"
+            onClick={generateTestOrders}
+            disabled={isUploading}
+            className="rounded-xl border border-[#1a2a45] bg-[#0a0e1a] px-4 py-2.5 text-sm font-medium text-gray-300 transition hover:border-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Generate test orders
+          </button>
+          <p className="text-center text-[11px] text-gray-600">No PDF needed — for trying the rest of the flow</p>
+        </div>
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-red-800">Upload Error</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
-            </div>
-            <button
-              onClick={clearResults}
-              className="text-red-500 hover:text-red-700 ml-3"
-            >
-              <X className="w-4 h-4" />
-            </button>
+        <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 sm:mx-5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-red-200">Upload error</p>
+            <p className="text-xs text-red-300/90">{error}</p>
           </div>
+          <button type="button" onClick={clearResults} className="shrink-0 text-red-400/80 hover:text-red-300" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      {/* Success Display */}
       {uploadResult && uploadResult.success && (
-        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-start">
-            <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-green-800">Upload Successful</h3>
-              <p className="text-sm text-green-700 mt-1">{uploadResult.message}</p>
-              
-              <div className="mt-3 text-sm text-green-600">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <strong>File:</strong> {uploadResult.filename}
-                  </div>
-                  <div>
-                    <strong>Orders Found:</strong> {uploadResult.extractedCount}
-                  </div>
-                  <div>
-                    <strong>Orders Added:</strong> {uploadResult.insertedCount}
-                  </div>
-                </div>
-              </div>
-
-              {uploadResult.orders && uploadResult.orders.length > 0 && (
-                <div className="mt-4">
-                  <details className="cursor-pointer">
-                    <summary className="text-sm font-medium text-green-800 hover:text-green-900">
-                      View Uploaded Orders ({uploadResult.orders.length})
-                    </summary>
-                    <div className="mt-2 max-h-40 overflow-y-auto bg-white rounded border p-2">
-                      {uploadResult.orders.slice(0, 10).map((order, index) => (
-                        <div key={index} className="text-xs text-gray-600 py-1 border-b last:border-b-0">
-                          <strong>{order.customer_name}</strong> - {order.delivery_address} ({order.postcode})
-                        </div>
-                      ))}
-                      {uploadResult.orders.length > 10 && (
-                        <div className="text-xs text-gray-500 pt-1">
-                          ...and {uploadResult.orders.length - 10} more orders
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
+        <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 sm:mx-5">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <div className="min-w-0 flex-1 text-xs text-emerald-200/90">
+            <p className="font-medium text-emerald-100">Upload successful</p>
+            <p className="mt-0.5">{uploadResult.message}</p>
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
+              {uploadResult.filename && (
+                <span className="text-emerald-200/80">File: {uploadResult.filename}</span>
               )}
+              <span>Found: {uploadResult.extractedCount} · Added: {uploadResult.insertedCount}</span>
             </div>
-            <button
-              onClick={clearResults}
-              className="text-green-500 hover:text-green-700 ml-3"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Partial Success (extraction worked, database failed) */}
-      {uploadResult && !uploadResult.success && uploadResult.extractedOrders && (
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 mr-3 flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-yellow-800">Partial Success</h3>
-              <p className="text-sm text-yellow-700 mt-1">
-                Orders were extracted from PDF but not saved to database: {uploadResult.message}
-              </p>
-              
-              <div className="mt-3 text-sm text-yellow-600">
-                <strong>Extracted Orders:</strong> {uploadResult.extractedOrders.length}
-              </div>
-
-              <details className="mt-4 cursor-pointer">
-                <summary className="text-sm font-medium text-yellow-800 hover:text-yellow-900">
-                  View Extracted Orders
+            {uploadResult.orders && uploadResult.orders.length > 0 && (
+              <details className="mt-3 cursor-pointer">
+                <summary className="text-xs font-medium text-emerald-200 hover:text-white">
+                  View orders ({uploadResult.orders.length})
                 </summary>
-                <div className="mt-2 max-h-40 overflow-y-auto bg-white rounded border p-2">
-                  {uploadResult.extractedOrders.slice(0, 10).map((order, index) => (
-                    <div key={index} className="text-xs text-gray-600 py-1 border-b last:border-b-0">
-                      <strong>{order.customer_name}</strong> - {order.delivery_address} ({order.postcode})
+                <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-white/5 bg-[#0a0e1a] p-2 text-xs text-gray-300 scrollbar-thin">
+                  {uploadResult.orders.slice(0, 10).map((order, index) => (
+                    <div key={index} className="border-b border-white/5 py-1 text-xs last:border-0">
+                      <span className="font-medium text-white">{order.customer_name}</span>
+                      <span className="text-gray-500"> — {order.delivery_address} ({order.postcode})</span>
                     </div>
                   ))}
-                  {uploadResult.extractedOrders.length > 10 && (
-                    <div className="text-xs text-gray-500 pt-1">
-                      ...and {uploadResult.extractedOrders.length - 10} more orders
-                    </div>
+                  {uploadResult.orders.length > 10 && (
+                    <p className="pt-1 text-[11px] text-gray-500">…and {uploadResult.orders.length - 10} more</p>
                   )}
                 </div>
               </details>
-            </div>
-            <button
-              onClick={clearResults}
-              className="text-yellow-500 hover:text-yellow-700 ml-3"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            )}
           </div>
+          <button type="button" onClick={clearResults} className="shrink-0 self-start text-emerald-400/80 hover:text-emerald-300" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      {/* Help Text */}
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-start">
-          <FileText className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="flex-1">
-            <h3 className="text-sm font-medium text-blue-800">PDF Format Guidelines</h3>
-            <ul className="text-sm text-blue-700 mt-2 space-y-1">
-              <li>• Include customer names (e.g., "John Smith")</li>
-              <li>• Include full addresses with postcodes (e.g., "123 Main Street, City WA4 1EF")</li>
-              <li>• Include contact information (emails, phone numbers)</li>
-              <li>• Include order values (e.g., "£45.99")</li>
-              <li>• Ensure text is readable (not scanned image)</li>
-            </ul>
+      {uploadResult && !uploadResult.success && uploadResult.extractedOrders && (
+        <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 sm:mx-5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <div className="min-w-0 flex-1 text-xs text-amber-200/90">
+            <p className="font-medium text-amber-100">Partial success</p>
+            <p className="mt-0.5">Extracted from PDF but not saved: {uploadResult.message}</p>
+            <p className="mt-1 text-amber-200/80">Extracted: {uploadResult.extractedOrders.length} orders</p>
+            <details className="mt-2 cursor-pointer">
+              <summary className="text-xs font-medium text-amber-200">View extracted</summary>
+              <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-white/5 bg-[#0a0e1a] p-2 text-gray-300 scrollbar-thin">
+                {uploadResult.extractedOrders.slice(0, 10).map((order, index) => (
+                  <div key={index} className="border-b border-white/5 py-1 text-xs last:border-0">
+                    <span className="font-medium text-white">{order.customer_name}</span>
+                    <span className="text-gray-500"> — {order.delivery_address}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
+          <button type="button" onClick={clearResults} className="shrink-0 self-start text-amber-400/80 hover:text-amber-300" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="border-t border-white/5 bg-[#0a0e1a]/50 px-4 py-3 sm:px-5">
+        <div className="flex gap-2">
+          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+          <ul className="list-inside list-disc space-y-0.5 text-[11px] text-gray-500 sm:text-xs">
+            <li>Use text-based PDFs (not scanned images) for best results</li>
+            <li>Include names, full addresses, postcodes, and values where possible</li>
+          </ul>
         </div>
       </div>
     </div>
