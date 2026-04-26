@@ -3,6 +3,7 @@ import { cn } from '../../ui/cn';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { ChevronLeft, ChevronRight, LayoutGrid, Package, BarChart3, Route, Settings, LogOut } from 'lucide-react';
+import { BrandLogo } from '../../ui/BrandLogo.jsx';
 
 const VIEW_META = {
   admin: { label: 'My Admin', shortLabel: 'Admin', icon: LayoutGrid, breadcrumb: ['Admin', 'Control center'] },
@@ -56,8 +57,8 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
         >
           <div className={cn('flex items-center justify-between px-4 py-4', collapsed && 'px-3')}>
             <div className={cn('flex items-center gap-3 min-w-0', collapsed && 'gap-0')}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-control border border-white/10 bg-white/[0.03]">
-                <span className="text-sm font-bold text-xr-brand">X</span>
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-control border border-white/10 bg-white/[0.03] p-px">
+                <BrandLogo className="h-8 w-8" alt="" />
               </div>
               {!collapsed && (
                 <div className="min-w-0">

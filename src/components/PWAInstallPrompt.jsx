@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePWA } from '../hooks/usePWA';
+import { BrandLogo } from '../ui/BrandLogo.jsx';
 
 const PWAInstallPrompt = () => {
   const { isOnline, isInstallable, isInstalled, installPWA } = usePWA();
@@ -32,8 +33,8 @@ const PWAInstallPrompt = () => {
         <div className="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-lg p-4 z-50 md:left-auto md:right-4 md:max-w-sm">
           <div className="flex items-start space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-sm">xR</span>
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-white/10 p-0.5">
+                <BrandLogo className="h-9 w-9" alt="" />
               </div>
             </div>
             

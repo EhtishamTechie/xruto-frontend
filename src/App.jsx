@@ -10,6 +10,7 @@ import { Page } from './ui/Page';
 import { SlideToConfirm } from './ui/SlideToConfirm';
 import { Skeleton } from './ui/Skeleton';
 import { useToast } from './ui/ToastContext.jsx';
+import { BrandLogo } from './ui/BrandLogo.jsx';
 import { ChevronLeft } from 'lucide-react';
 import { AnalyticsCharts } from './components/AnalyticsCharts';
 
@@ -122,8 +123,8 @@ const LoginScreen = ({ onLogin }) => {
         <div className="flex flex-col items-center">
           <div className="mb-8 w-full text-center">
             <div className="inline-flex flex-col items-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-card border border-xr-brand/35 bg-gradient-to-br from-xr-brand/20 to-amber-600/5 shadow-lg shadow-xr-brand/10">
-                <span className="text-2xl font-black tracking-tight text-xr-brand">X</span>
+              <div className="mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-card border border-white/10 shadow-lg shadow-amber-500/10">
+                <BrandLogo className="h-14 w-14" alt="xRuto" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">xRuto</h1>
               <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.28em] text-xr-muted">Logistics Intelligence</p>
