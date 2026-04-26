@@ -1,10 +1,23 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition, useRef } from 'react';
 import MyAdmin from './components/MyAdmin';
 import Orders from './components/Orders';
 import DriverRoutes from './components/DriverRoutes_IMPROVED';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import { AppShell } from './components/layout/AppShell';
+import { Card as UiCard } from './ui/Card';
+import { Button } from './ui/Button';
+import { Page } from './ui/Page';
+import { SlideToConfirm } from './ui/SlideToConfirm';
+import { Skeleton } from './ui/Skeleton';
+import { useToast } from './ui/ToastContext.jsx';
+import { ChevronLeft } from 'lucide-react';
+import { AnalyticsCharts } from './components/AnalyticsCharts';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // fallback for local dev
+/** If false (default), Analytics never fetches get-routes — that JSON alone can block the main thread for seconds. */
+const LEGACY_ANALYTICS = import.meta.env.VITE_LEGACY_ANALYTICS === 'true';
+const MAX_SNAPSHOT_TEXT = 500_000;
+const MAX_GET_ROUTES_TEXT = 1_200_000;
 
 const Ico = ({ d, className = 'w-5 h-5', fill = false }) => (
   <svg className={className} fill={fill ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke={fill ? 'none' : 'currentColor'} strokeWidth={1.8}>
@@ -31,41 +44,14 @@ const ICONS = {
   truck: 'M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0',
 };
 
-// Slide-to-confirm button
-const SlideButton = ({ label, onConfirm, loading = false, disabled = false }) => {
-  const trackRef = useRef(null);
-  const [dragging, setDragging] = useState(false);
-  const [offsetX, setOffsetX] = useState(0);
-  const getMaxX = () => (trackRef.current ? trackRef.current.offsetWidth - 48 : 200);
-  const handleStart = () => { if (!loading && !disabled) setDragging(true); };
-  const handleMove = (clientX) => { if (!dragging || !trackRef.current) return; const rect = trackRef.current.getBoundingClientRect(); setOffsetX(Math.max(0, Math.min(clientX - rect.left - 24, getMaxX()))); };
-  const handleEnd = () => { if (!dragging) return; setDragging(false); if (offsetX >= getMaxX() * 0.85) onConfirm(); setOffsetX(0); };
-  return (
-    <div ref={trackRef} className={`relative h-12 rounded-full overflow-hidden select-none ${disabled || loading ? 'opacity-50' : ''}`}
-      style={{ background: 'linear-gradient(135deg, #0f1b2e 0%, #162540 100%)', border: '1px solid rgba(59,130,246,0.25)' }}
-      onMouseMove={e => handleMove(e.clientX)} onMouseUp={handleEnd} onMouseLeave={handleEnd}
-      onTouchMove={e => handleMove(e.touches[0].clientX)} onTouchEnd={handleEnd}>
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="text-white/70 text-sm font-medium">{loading ? 'Processing...' : label}</span>
-      </div>
-      <div className="absolute top-1 left-1 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 cursor-grab active:cursor-grabbing transition-transform z-10"
-        style={{ transform: `translateX(${offsetX}px)` }}
-        onMouseDown={e => { e.preventDefault(); handleStart(); }} onTouchStart={handleStart}>
-        {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          : <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
-      </div>
-    </div>
-  );
-};
-
 // Standalone input field — must be outside LoginScreen to avoid remount on every keystroke
 const LoginInputField = ({ icon, type = 'text', value, onChange, placeholder, showToggle, onToggle, isPassword }) => (
   <div className="relative">
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><Ico d={icon} className="w-4.5 h-4.5" /></div>
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xr-muted"><Ico d={icon} className="w-4.5 h-4.5" /></div>
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      className="w-full bg-[#111b2e] border border-[#1a2a45] rounded-full pl-11 pr-11 py-3.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500/50 transition" />
+      className="w-full rounded-control border border-white/10 bg-xr-bg/50 py-3.5 pl-11 pr-11 text-sm text-xr-text placeholder-xr-muted backdrop-blur-sm transition focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/20" />
     {showToggle && (
-      <button type="button" onClick={onToggle} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+      <button type="button" onClick={onToggle} className="absolute right-4 top-1/2 -translate-y-1/2 text-xr-muted hover:text-xr-text">
         <Ico d={isPassword ? ICONS.eyeOff : ICONS.eye} className="w-4.5 h-4.5" />
       </button>
     )}
@@ -129,264 +115,404 @@ const LoginScreen = ({ onLogin }) => {
 
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center px-4 py-10 md:px-0">
-      {/* Mobile: full screen centered | Desktop: card with glass effect */}
-      <div className="w-full max-w-sm md:max-w-md md:bg-[#111b2e]/60 md:backdrop-blur-xl md:border md:border-[#1a2a45] md:rounded-3xl md:p-10 md:shadow-2xl md:shadow-black/40">
+    <div className="relative flex min-h-screen items-center justify-center bg-xr-bg px-4 py-10 md:px-6">
+      <div aria-hidden className="pointer-events-none fixed inset-0 bg-grid opacity-[0.35]" />
+      <div aria-hidden className="pointer-events-none fixed inset-0 bg-noise" />
+      <UiCard variant="glass" className="relative z-10 w-full max-w-sm p-6 shadow-panel md:max-w-md md:p-10">
         <div className="flex flex-col items-center">
-          {/* xRuto brand — logo mark + name + tagline */}
-          <div className="mb-8 text-center w-full">
+          <div className="mb-8 w-full text-center">
             <div className="inline-flex flex-col items-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#F59E0B]/35 bg-gradient-to-br from-[#F59E0B]/20 to-amber-600/5 shadow-lg shadow-[#F59E0B]/10">
-                <span className="text-2xl font-black tracking-tight text-[#F59E0B]">X</span>
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-card border border-xr-brand/35 bg-gradient-to-br from-xr-brand/20 to-amber-600/5 shadow-lg shadow-xr-brand/10">
+                <span className="text-2xl font-black tracking-tight text-xr-brand">X</span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">xRuto</h1>
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.28em] text-gray-500">Logistics Intelligence</p>
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.28em] text-xr-muted">Logistics Intelligence</p>
             </div>
           </div>
           {view === 'login' && (
             <>
-              <h2 className="text-lg font-semibold text-white mb-6 text-center">Sign in to your account</h2>
-              {error && <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl text-center">{error}</div>}
-              <div className="space-y-4">
+              <h2 className="mb-6 text-center text-lg font-semibold text-white">Sign in to your account</h2>
+              {error && (
+                <div className="mb-4 w-full rounded-control border border-xr-danger/25 bg-xr-danger/10 px-4 py-3 text-center text-sm text-red-200">{error}</div>
+              )}
+              <div className="w-full space-y-4">
                 <LoginInputField icon={ICONS.user} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your Email Address" />
                 <LoginInputField icon={ICONS.lock} type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your Password" showToggle onToggle={() => setShowPw(v => !v)} isPassword={showPw} />
-                <SlideButton label="Slide To Sign in" onConfirm={doLogin} loading={loading} />
-                <button onClick={() => switchView('forgot')} className="w-full text-center text-sm text-gray-500 hover:text-gray-300 pt-2">Forgot Password?</button>
+                <SlideToConfirm label="Slide to sign in" onConfirm={doLogin} loading={loading} />
+                <Button type="button" variant="ghost" size="sm" className="mx-auto w-full text-xr-muted hover:text-xr-text" onClick={() => switchView('forgot')}>
+                  Forgot password?
+                </Button>
               </div>
             </>
           )}
           {view === 'forgot' && (
             <>
-              <h2 className="text-lg font-semibold text-white mb-2 text-center">Reset Password</h2>
-              <p className="text-gray-500 text-sm mb-8 text-center">Enter your email to receive a reset link</p>
-              {error && <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl text-center">{error}</div>}
-              {successMsg && <div className="mb-4 bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-xl text-center">{successMsg}</div>}
-              <div className="space-y-4">
+              <h2 className="mb-2 text-center text-lg font-semibold text-white">Reset password</h2>
+              <p className="mb-8 text-center text-sm text-xr-muted">Enter your email to receive a reset link</p>
+              {error && (
+                <div className="mb-4 w-full rounded-control border border-xr-danger/25 bg-xr-danger/10 px-4 py-3 text-center text-sm text-red-200">{error}</div>
+              )}
+              {successMsg && (
+                <div className="mb-4 w-full rounded-control border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-200">{successMsg}</div>
+              )}
+              <div className="w-full space-y-4">
                 <LoginInputField icon={ICONS.user} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your Email Address" />
-                <SlideButton label="Slide To Send Link" onConfirm={doForgot} loading={loading} />
-                <button onClick={() => switchView('login')} className="w-full text-center text-sm text-gray-500 hover:text-gray-300 pt-2">&larr; Back to Sign in</button>
+                <SlideToConfirm label="Slide to send link" onConfirm={doForgot} loading={loading} />
+                <Button type="button" variant="ghost" size="sm" className="mx-auto w-full gap-1 text-xr-muted hover:text-xr-text" onClick={() => switchView('login')}>
+                  <ChevronLeft className="h-4 w-4" />
+                  Back to sign in
+                </Button>
               </div>
             </>
           )}
           {view === 'reset' && (
             <>
-              <h2 className="text-lg font-semibold text-white mb-2 text-center">Set New Password</h2>
-              <p className="text-gray-500 text-sm mb-8 text-center">Enter your new password below</p>
-              {error && <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl text-center">{error}</div>}
-              {successMsg && <div className="mb-4 bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-xl text-center">{successMsg}</div>}
-              <div className="space-y-4">
+              <h2 className="mb-2 text-center text-lg font-semibold text-white">Set new password</h2>
+              <p className="mb-8 text-center text-sm text-xr-muted">Enter your new password below</p>
+              {error && (
+                <div className="mb-4 w-full rounded-control border border-xr-danger/25 bg-xr-danger/10 px-4 py-3 text-center text-sm text-red-200">{error}</div>
+              )}
+              {successMsg && (
+                <div className="mb-4 w-full rounded-control border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-200">{successMsg}</div>
+              )}
+              <div className="w-full space-y-4">
                 <LoginInputField icon={ICONS.lock} type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="New Password (min 6 chars)" />
                 <LoginInputField icon={ICONS.lock} type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Confirm Password" />
-                <SlideButton label="Slide To Reset Password" onConfirm={doReset} loading={loading} />
-                <button onClick={() => switchView('login')} className="w-full text-center text-sm text-gray-500 hover:text-gray-300 pt-2">&larr; Back to Sign in</button>
+                <SlideToConfirm label="Slide to reset password" onConfirm={doReset} loading={loading} />
+                <Button type="button" variant="ghost" size="sm" className="mx-auto w-full gap-1 text-xr-muted hover:text-xr-text" onClick={() => switchView('login')}>
+                  <ChevronLeft className="h-4 w-4" />
+                  Back to sign in
+                </Button>
               </div>
             </>
           )}
         </div>
-      </div>
+      </UiCard>
     </div>
   );
 };
 
-// Sidebar Navigation — visible on md+ screens
-const SideNav = ({ currentView, onChange, isAdmin, user, onLogout }) => {
-  const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
-  const adminTabs = [
-    { id: 'admin',     label: 'My Admin',  icon: ICONS.admin },
-    { id: 'orders',    label: 'Orders',    icon: ICONS.orders },
-    { id: 'analytics', label: 'Analytics', icon: ICONS.analytics },
-    { id: 'routes',    label: 'Route',     icon: ICONS.route },
-    { id: 'settings',  label: 'Settings',  icon: ICONS.settings },
-  ];
-  const driverTabs = [
-    { id: 'routes',    label: 'My Routes', icon: ICONS.route },
-    { id: 'analytics', label: 'Analytics', icon: ICONS.analytics },
-    { id: 'settings',  label: 'Settings',  icon: ICONS.settings },
-  ];
-  const tabs = isAdmin ? adminTabs : driverTabs;
+const formatISODate = (d) => d.toISOString().split('T')[0];
 
-  return (
-    <aside className="hidden md:flex flex-col w-[240px] bg-gradient-to-b from-xr-sidebar to-[#0D1320] border-r border-white/10 h-screen sticky top-0 shrink-0">
-      {/* Brand */}
-      <div className="px-5 py-6 border-b border-white/10">
-        <div className="relative inline-block">
-          <h1 className="text-xl font-bold tracking-tight text-white">xRuto</h1>
-          <span aria-hidden className="absolute left-0 right-0 -bottom-1 h-px bg-gradient-to-r from-transparent via-[#F59E0B]/70 to-transparent" />
-          <span aria-hidden className="absolute left-1/4 right-1/4 -bottom-1.5 h-3 blur-xl bg-[#F59E0B]/25" />
-        </div>
-        <p className="text-[11px] text-gray-500 mt-1">Logistics Intelligence</p>
-      </div>
-
-      {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-        {tabs.map(tab => {
-          const active = currentView === tab.id;
-          return (
-            <button key={tab.id} onClick={() => onChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200
-                ${active
-                  ? 'relative bg-[#F59E0B]/10 text-[#F59E0B] border border-white/10'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'}`}>
-              {active && <span aria-hidden className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#F59E0B]" />}
-              <Ico d={tab.icon} className={`w-5 h-5 ${active ? 'text-[#F59E0B]' : ''}`} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* User row + compact logout (always visible above fold) */}
-      <div className="mt-auto border-t border-white/10 px-2 py-3">
-        <div className="flex items-center gap-2 rounded-xl px-2 py-1.5">
-          <div className="h-8 w-8 rounded-full bg-[#0A0F1E] ring-1 ring-[#F59E0B]/35 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-white truncate">{user?.name || 'User'}</p>
-            <p className="text-[10px] text-gray-500 truncate">{user?.role === 'admin' ? 'Administrator' : 'Driver'}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            title="Log out"
-            className="shrink-0 flex h-8 items-center justify-center gap-1 rounded-lg border border-red-500/25 bg-red-500/5 px-2.5 text-[11px] font-medium text-red-300/90 transition hover:bg-red-500/15"
-          >
-            <Ico d={ICONS.logout} className="h-3.5 w-3.5 opacity-90" />
-            <span className="hidden min-[200px]:inline sm:inline">Log out</span>
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
+const addDays = (isoDate, delta) => {
+  const d = new Date(`${isoDate}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return formatISODate(d);
 };
 
-// Bottom Navigation — mobile only
-const BottomNav = ({ currentView, onChange, isAdmin }) => {
-  const adminTabs = [
-    { id: 'admin',     label: 'My Admin',  icon: ICONS.admin },
-    { id: 'orders',    label: 'Orders',    icon: ICONS.orders },
-    { id: 'analytics', label: 'Analytics', icon: ICONS.analytics },
-    { id: 'routes',    label: 'Route',     icon: ICONS.route },
-    { id: 'settings',  label: 'Settings',  icon: ICONS.settings },
-  ];
-  const driverTabs = [
-    { id: 'routes',    label: 'My Routes', icon: ICONS.route },
-    { id: 'analytics', label: 'Analytics', icon: ICONS.analytics },
-    { id: 'settings',  label: 'Settings',  icon: ICONS.settings },
-  ];
-  const tabs = isAdmin ? adminTabs : driverTabs;
-
-  return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0a0e1a]/95 backdrop-blur-md border-t border-[#1a2a45] z-20 safe-area-bottom">
-      <div className={`grid ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'} px-1 py-1.5`}>
-        {tabs.map(tab => {
-          const active = currentView === tab.id;
-          return (
-            <button key={tab.id} onClick={() => onChange(tab.id)}
-              className="flex flex-col items-center gap-0.5 py-1.5 transition-colors">
-              <Ico d={tab.icon} className={`w-5 h-5 ${active ? 'text-orange-500' : 'text-gray-600'}`} />
-              <span className={`text-[10px] font-medium ${active ? 'text-orange-500' : 'text-gray-600'}`}>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
+const eachDayISO = (startISO, endISO) => {
+  const out = [];
+  if (!startISO || !endISO || startISO > endISO) return out;
+  let cur = startISO;
+  for (let n = 0; n < 40 && cur <= endISO; n += 1) {
+    out.push(cur);
+    const next = addDays(cur, 1);
+    if (next === cur) break;
+    cur = next;
+  }
+  return out;
 };
 
-// Analytics Screen — responsive grid
+/** Prefer route-level counts (from slim=1) to avoid scanning every nested order (keeps the tab responsive). */
+const summarizeRoutes = (routes) => {
+  const r = routes || [];
+  if (r.length === 0) {
+    return { totalRoutes: 0, delivered: 0, totalStops: 0, avgDuration: 0, dispatched: 0, completed: 0 };
+  }
+  const canUseAgg = r.every((rt) => rt.total_orders != null && rt.completed_orders != null);
+  let delivered;
+  let totalStops;
+  if (canUseAgg) {
+    totalStops = r.reduce((s, rt) => s + (Number(rt.total_orders) || 0), 0);
+    delivered = r.reduce((s, rt) => s + (Number(rt.completed_orders) || 0), 0);
+  } else {
+    // Cap work — a single route with tens of thousands of order objects was freezing the tab
+    const MAX_STOPS = 15000;
+    const allStops = [];
+    outer: for (const rt of r) {
+      for (const seg of rt.route_segments || []) {
+        for (const o of seg.orders || []) {
+          allStops.push(o);
+          if (allStops.length >= MAX_STOPS) break outer;
+        }
+      }
+    }
+    delivered = allStops.filter((o) => o.status === 'delivered').length;
+    totalStops = allStops.length;
+  }
+  const avgDuration =
+    r.length > 0
+      ? r.reduce(
+          (sum, x) => sum + (x.estimated_duration_minutes ?? x.estimated_duration ?? x.total_time ?? 0),
+          0
+        ) / r.length
+      : 0;
+  const activeStatuses = new Set(['dispatched', 'in_progress', 'in_route', 'assigned']);
+  const dispatched = r.filter((x) => activeStatuses.has(x.status)).length;
+  const completed = r.filter((x) => x.status === 'completed').length;
+  return { totalRoutes: r.length, delivered, totalStops, avgDuration, dispatched, completed };
+};
+
+// Analytics — visualization only (data fetch + charts)
 const AnalyticsScreen = () => {
-  const [stats, setStats] = useState(null);
+  const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const [period, setPeriod] = useState('today'); // today | week | month
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [series, setSeries] = useState([]);
+  const [summary, setSummary] = useState({
+    totalRoutes: 0,
+    delivered: 0,
+    totalStops: 0,
+    avgDuration: 0,
+    dispatched: 0,
+    completed: 0,
+    pendingOrders: 0,
+    totalOrders: 0,
+  });
+
+  const range = useMemo(() => {
+    const end = formatISODate(new Date());
+    if (period === 'today') return { start: end, end };
+    if (period === 'week') return { start: addDays(end, -6), end };
+    return { start: addDays(end, -29), end };
+  }, [period]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    let cancelled = false;
+    const ac = new AbortController();
+    const abortTimer = setTimeout(() => ac.abort(), 25000);
+    const run = async () => {
+      setLoading(true);
+      setError('');
       try {
         const token = localStorage.getItem('xruto_token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const [routesRes, ordersRes] = await Promise.all([
-          fetch(`${API_BASE}/orders/get-routes`, { headers }).then(r => r.json()).catch(() => ({ success: false })),
-          fetch(`${API_BASE}/orders/eligible?date=${new Date().toISOString().split('T')[0]}`, { headers }).then(r => r.json()).catch(() => ({ success: false }))
-        ]);
-        const routes = routesRes.success ? (routesRes.routes || []) : [];
-        const orders = ordersRes.success ? (ordersRes.orders || []) : [];
-        const allRouteOrders = routes.flatMap(r => r.route_segments?.flatMap(s => s.orders || []) || []);
-        const delivered = allRouteOrders.filter(s => s.status === 'delivered').length;
-        const totalStops = allRouteOrders.length;
-        const avgDuration = routes.length > 0 ? routes.reduce((sum, r) => sum + (r.estimated_duration || r.total_time || 0), 0) / routes.length : 0;
-        const dispatched = routes.filter(r => r.status === 'dispatched' || r.status === 'in_progress').length;
-        const completed = routes.filter(r => r.status === 'completed').length;
-        const pending = orders.length - delivered;
-        setStats({ totalRoutes: routes.length, delivered, totalStops, avgDuration, dispatched, completed, pendingOrders: pending, totalOrders: orders.length });
-      } catch { setStats(null); }
-      setLoading(false);
+        const fetchOpts = { headers, signal: ac.signal, cache: 'no-store' };
+
+        const days = eachDayISO(range.start, range.end);
+        // Let the loading skeleton paint before any network/parse work
+        await new Promise((r) => {
+          requestAnimationFrame(() => r());
+        });
+        if (cancelled) return;
+
+        const loadSnapshot = async () => {
+          const snapUrl = `${API_BASE}/orders/analytics-snapshot?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
+          const snapReq = await fetch(snapUrl, fetchOpts);
+          if (cancelled) return { status: 'cancel' };
+          if (snapReq.status === 404) return { status: 404 };
+          if (!snapReq.ok) {
+            throw new Error(
+              snapReq.status === 401 ? 'Sign in again to view analytics' : `Analytics failed (${snapReq.status})`
+            );
+          }
+          const snapText = await snapReq.text();
+          if (snapText.length > MAX_SNAPSHOT_TEXT) {
+            throw new Error('Unexpected analytics response size. Check API_BASE / proxy.');
+          }
+          try {
+            return { status: 'ok', data: JSON.parse(snapText) };
+          } catch {
+            throw new Error('Invalid JSON from analytics-snapshot. Check VITE_API_URL and backend version.');
+          }
+        };
+
+        const loadLegacyRoutes = async () => {
+          const routesUrl = `${API_BASE}/orders/get-routes?date=${encodeURIComponent(range.end)}&slim=1`;
+          const routesReq = await fetch(routesUrl, fetchOpts);
+          if (cancelled) return null;
+          if (!routesReq.ok) {
+            throw new Error(
+              routesReq.status === 401 ? 'Sign in again to view analytics' : `Routes data failed (${routesReq.status})`
+            );
+          }
+          const routeText = await routesReq.text();
+          if (routeText.length > MAX_GET_ROUTES_TEXT) {
+            throw new Error('Routes response too large. Use GET /api/orders/analytics-snapshot on the server (turn off VITE_LEGACY_ANALYTICS).');
+          }
+          let routeRes;
+          try {
+            routeRes = JSON.parse(routeText);
+          } catch {
+            throw new Error('Invalid JSON from get-routes');
+          }
+          await new Promise((res) => {
+            requestAnimationFrame(() => res());
+          });
+          if (cancelled) return null;
+
+          const lastDayISO = range.end;
+          const eligUrl = `${API_BASE}/orders/eligible?date=${encodeURIComponent(lastDayISO)}&summary=1`;
+          const eligReq = await fetch(eligUrl, fetchOpts);
+          if (cancelled) return null;
+          if (!eligReq.ok) {
+            throw new Error(`Eligible count failed (${eligReq.status})`);
+          }
+          const ordersText = await eligReq.text();
+          if (ordersText.length > 200_000) {
+            throw new Error('Eligible response too large. Use /eligible?summary=1 on the server.');
+          }
+          let ordersRes;
+          try {
+            ordersRes = JSON.parse(ordersText);
+          } catch {
+            throw new Error('Invalid JSON from eligible');
+          }
+          if (cancelled) return null;
+          return { routeRes, ordersRes };
+        };
+
+        let lastS;
+        let totalEligible = 0;
+
+        const loaded = await loadSnapshot();
+        if (cancelled) return;
+        if (loaded?.status === 'cancel') return;
+
+        let snapData = loaded?.status === 'ok' ? loaded.data : null;
+        if (loaded?.status === 404) {
+          snapData = null;
+        }
+        if (snapData && snapData.success && snapData.snapshot) {
+          const s = snapData.snapshot;
+          lastS = {
+            totalRoutes: Number(s.totalRoutes) || 0,
+            delivered: Number(s.delivered) || 0,
+            totalStops: Number(s.totalStops) || 0,
+            avgDuration: Number(s.avgDuration) || 0,
+            dispatched: Number(s.dispatched) || 0,
+            completed: Number(s.completed) || 0,
+          };
+          totalEligible = Number(snapData.eligibleCount) || 0;
+        } else if (LEGACY_ANALYTICS) {
+          const leg = await loadLegacyRoutes();
+          if (cancelled) return;
+          if (!leg) return;
+          const lastRoutes = leg.routeRes?.success ? leg.routeRes.routes || [] : [];
+          lastS = summarizeRoutes(lastRoutes);
+          totalEligible = leg.ordersRes.success ? Number(leg.ordersRes.total_orders) || 0 : 0;
+        } else {
+          throw new Error(
+            'Analytics needs the latest backend (GET /api/orders/analytics-snapshot). Restart the server in /backend, or set VITE_LEGACY_ANALYTICS=true in .env only if you must use the slow route.'
+          );
+        }
+
+        const rate = lastS.totalStops > 0 ? Math.round((lastS.delivered / lastS.totalStops) * 100) : 0;
+        const nextSeries = days.map((d) => ({
+          date: d.slice(5),
+          delivered: lastS.delivered,
+          routes: lastS.totalRoutes,
+          dispatched: lastS.dispatched,
+          completed: lastS.completed,
+          rate,
+        }));
+        const pending = Math.max(0, totalEligible - lastS.delivered);
+
+        startTransition(() => {
+          setSeries(nextSeries);
+          setSummary({
+            totalRoutes: lastS.totalRoutes,
+            delivered: lastS.delivered,
+            totalStops: lastS.totalStops,
+            avgDuration: lastS.avgDuration,
+            dispatched: lastS.dispatched,
+            completed: lastS.completed,
+            pendingOrders: pending,
+            totalOrders: totalEligible,
+          });
+        });
+      } catch (e) {
+        if (cancelled || e?.name === 'AbortError') return;
+        setError(e?.message || 'Failed to load analytics');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
-    fetchStats();
-  }, []);
+    run();
+    return () => {
+      cancelled = true;
+      clearTimeout(abortTimer);
+      ac.abort();
+    };
+  }, [range.start, range.end]);
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" /></div>;
+  useEffect(() => {
+    if (!error) return;
+    toastRef.current.error(error);
+    setError('');
+  }, [error]);
 
-  const s = stats || { totalRoutes: 0, delivered: 0, totalStops: 0, avgDuration: 0, dispatched: 0, completed: 0, pendingOrders: 0, totalOrders: 0 };
-  const deliveryRate = s.totalStops > 0 ? Math.round((s.delivered / s.totalStops) * 100) : 0;
+  const deliveryRate = summary.totalStops > 0 ? Math.round((summary.delivered / summary.totalStops) * 100) : 0;
 
   return (
-    <div className="min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-      <header className="sticky top-0 z-10 border-b border-[#1a2a45] bg-[#0a0e1a]/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 md:px-8 md:py-5">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">xRuto · Performance</p>
-          <h2 className="mt-0.5 text-xl font-bold tracking-tight text-white md:text-2xl">Analytics</h2>
-          <p className="mt-0.5 max-w-2xl text-sm text-gray-500">Route and delivery metrics for today. Same dark palette, clearer hierarchy.</p>
-        </div>
-      </header>
-      <div className="mx-auto max-w-[1600px] space-y-4 px-4 py-4 sm:px-6 md:space-y-6 md:px-8 md:py-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        {[
-          { label: 'Total Routes', value: s.totalRoutes, sub: 'Generated', color: 'text-blue-400' },
-          { label: 'Delivered', value: s.delivered, sub: `of ${s.totalStops} stops`, color: 'text-green-400' },
-          { label: 'Avg Duration', value: s.avgDuration > 0 ? `${Math.round(s.avgDuration / 60)}m` : '-', sub: 'Per route', color: 'text-orange-400' },
-          { label: 'Pending', value: s.pendingOrders, sub: `of ${s.totalOrders} orders`, color: 'text-amber-400' },
-        ].map(item => (
-          <div key={item.label} className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-4 md:p-5">
-            <p className={`text-2xl md:text-3xl font-bold ${item.color}`}>{item.value}</p>
-            <p className="text-sm text-gray-300 mt-0.5">{item.label}</p>
-            <p className="text-xs text-gray-600">{item.sub}</p>
-          </div>
-        ))}
-      </div>
-      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-        <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-300 font-medium">Delivery Rate</span>
-            <span className="text-sm font-bold text-orange-400">{deliveryRate}%</span>
-          </div>
-          <div className="h-2.5 bg-[#0a0e1a] rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-500" style={{ width: `${deliveryRate}%` }} />
-          </div>
-        </div>
-        <div className="bg-[#111b2e] border border-[#1a2a45] rounded-2xl p-5">
-          <h3 className="text-sm font-medium text-gray-300 mb-3">Route Status</h3>
-          <div className="space-y-2.5">
-            {[
-              { label: 'Dispatched / In Progress', count: s.dispatched, color: 'bg-blue-500' },
-              { label: 'Completed', count: s.completed, color: 'bg-green-500' },
-              { label: 'Pending Review', count: Math.max(0, s.totalRoutes - s.dispatched - s.completed), color: 'bg-yellow-500' },
-            ].map(row => (
-              <div key={row.label} className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${row.color}`} />
-                <span className="text-sm text-gray-400 flex-1">{row.label}</span>
-                <span className="text-sm font-semibold text-white">{row.count}</span>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-xr-muted">
+          <span className="text-xr-secondary">{range.start}</span>
+          <span className="mx-1.5 text-white/25">—</span>
+          <span className="text-xr-secondary">{range.end}</span>
+        </p>
+        <div className="inline-flex w-full max-w-md overflow-x-auto rounded-control border border-white/10 bg-white/[0.03] p-1 sm:w-auto">
+          {[
+            { id: 'today', label: 'Today' },
+            { id: 'week', label: '7d' },
+            { id: 'month', label: '30d' },
+          ].map((p) => (
+            <Button
+              key={p.id}
+              variant={period === p.id ? 'primary' : 'ghost'}
+              size="sm"
+              className={period === p.id ? '' : 'text-xr-secondary'}
+              onClick={() => setPeriod(p.id)}
+            >
+              {p.label}
+            </Button>
+          ))}
         </div>
       </div>
-      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          <UiCard variant="glass" className="p-5 sm:p-6">
+            <Skeleton className="mb-4 h-4 w-56" />
+            <Skeleton className="h-[260px] w-full rounded-card" />
+          </UiCard>
+          <div className="grid gap-4 lg:grid-cols-5">
+            <UiCard variant="glass" className="p-5 sm:p-6 lg:col-span-3">
+              <Skeleton className="mb-4 h-4 w-48" />
+              <Skeleton className="h-[240px] w-full rounded-card" />
+            </UiCard>
+            <UiCard variant="glass" className="flex min-h-[200px] items-center justify-center p-5 lg:col-span-2">
+              <Skeleton className="h-36 w-36 rounded-full" />
+            </UiCard>
+          </div>
+          <UiCard variant="glass" className="p-5 sm:p-6">
+            <Skeleton className="mb-4 h-4 w-40" />
+            <Skeleton className="h-32 w-full rounded-card" />
+          </UiCard>
+        </div>
+      ) : (
+        <AnalyticsCharts
+          series={series}
+          deliveryRate={deliveryRate}
+          snapshot={{
+            totalRoutes: summary.totalRoutes,
+            dispatched: summary.dispatched,
+            completed: summary.completed,
+            avgRouteMinutes: summary.avgDuration > 0 ? Math.round(summary.avgDuration) : null,
+          }}
+        />
+      )}
     </div>
   );
 };
 
 // Settings — account, security, WooCommerce (admin)
 const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
+  const { toast } = useToast();
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
   const [panel, setPanel] = useState('home');
   const [displayName, setDisplayName] = useState(user?.name || '');
@@ -396,15 +522,11 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
-  const [pwMsg, setPwMsg] = useState('');
 
   const [wooStores, setWooStores] = useState([]);
   const [wooForm, setWooForm] = useState({ name: '', url: '', consumer_key: '', consumer_secret: '' });
   const [wooLoading, setWooLoading] = useState(false);
-  const [wooMsg, setWooMsg] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
-  const [syncMsg, setSyncMsg] = useState('');
-  const [profileMsg, setProfileMsg] = useState('');
 
   const token = localStorage.getItem('xruto_token');
   const authHeaders = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
@@ -420,17 +542,27 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
 
   const saveProfileName = () => {
     const name = displayName.trim();
-    if (!name) { setProfileMsg('Please enter a name'); return; }
+    if (!name) {
+      toast.error('Please enter a name');
+      return;
+    }
     onUserUpdate?.({ name });
-    setProfileMsg('Display name saved on this device.');
-    setTimeout(() => setProfileMsg(''), 3000);
+    toast.success('Display name saved on this device.');
   };
 
   const submitPasswordChange = async () => {
-    setPwMsg('');
-    if (!currentPw || !newPw) { setPwMsg('Fill in all password fields'); return; }
-    if (newPw !== confirmPw) { setPwMsg('New passwords do not match'); return; }
-    if (newPw.length < 6) { setPwMsg('New password must be at least 6 characters'); return; }
+    if (!currentPw || !newPw) {
+      toast.error('Fill in all password fields');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (newPw.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
     setPwLoading(true);
     try {
       const res = await fetch(`${API_BASE}/auth/change-password`, {
@@ -440,109 +572,120 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Request failed');
-      setPwMsg('Password updated successfully.');
+      toast.success('Password updated successfully.');
       setCurrentPw('');
       setNewPw('');
       setConfirmPw('');
     } catch (e) {
-      setPwMsg(e.message || 'Failed to change password');
+      toast.error(e.message || 'Failed to change password');
     } finally {
       setPwLoading(false);
     }
   };
 
   const addWooStore = async () => {
-    if (!wooForm.name || !wooForm.url || !wooForm.consumer_key || !wooForm.consumer_secret) { setWooMsg('All fields are required'); return; }
-    setWooLoading(true); setWooMsg('');
+    if (!wooForm.name || !wooForm.url || !wooForm.consumer_key || !wooForm.consumer_secret) {
+      toast.error('All fields are required');
+      return;
+    }
+    setWooLoading(true);
     try {
       const res = await fetch(`${API_BASE}/admin/woo-stores`, { method: 'POST', headers: authHeaders, body: JSON.stringify(wooForm) });
       const data = await res.json();
       if (data.success) {
         setWooForm({ name: '', url: '', consumer_key: '', consumer_secret: '' });
-        setWooMsg('Store added successfully');
+        toast.success('Store added successfully');
         loadWooStores();
       } else {
-        setWooMsg(data.message || 'Failed');
+        toast.error(data.message || 'Failed to add store');
       }
-    } catch (e) { setWooMsg('Error: ' + e.message); }
-    setWooLoading(false);
+    } catch (e) {
+      toast.error(e.message || 'Could not add store');
+    } finally {
+      setWooLoading(false);
+    }
   };
 
   const removeWooStore = async (storeId) => {
     try {
-      await fetch(`${API_BASE}/admin/woo-stores/${storeId}`, { method: 'DELETE', headers: authHeaders });
-      loadWooStores();
-    } catch { /* noop */ }
+      const res = await fetch(`${API_BASE}/admin/woo-stores/${storeId}`, { method: 'DELETE', headers: authHeaders });
+      if (res.ok || res.status === 204) {
+        toast.success('Store removed');
+        loadWooStores();
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || `HTTP ${res.status}`);
+    } catch (e) {
+      toast.error(e.message || 'Could not remove store');
+    }
   };
 
   const syncWooOrders = async () => {
-    setSyncLoading(true); setSyncMsg('');
+    setSyncLoading(true);
     try {
       const res = await fetch(`${API_BASE}/orders/sync-woocommerce`, { method: 'POST', headers: authHeaders });
       const data = await res.json();
-      if (data.success) setSyncMsg(`Synced ${data.imported_count || 0} orders from ${data.stores_synced || 0} stores`);
-      else setSyncMsg(data.message || 'Sync failed');
-    } catch (e) { setSyncMsg('Error: ' + e.message); }
-    setSyncLoading(false);
+      if (data.success) {
+        toast.success(`Synced ${data.imported_count || 0} orders from ${data.stores_synced || 0} stores`);
+      } else {
+        toast.error(data.message || 'Sync failed');
+      }
+    } catch (e) {
+      toast.error(e.message || 'Sync request failed');
+    } finally {
+      setSyncLoading(false);
+    }
   };
 
-  const inputCls = 'w-full bg-[#0a0e1a] border border-[#1a2a45] rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500/50';
+  const inputCls =
+    'w-full rounded-control border border-white/10 bg-xr-bg/60 px-4 py-2.5 text-sm text-xr-text placeholder-xr-muted focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/20';
+
+  const goHome = () => {
+    setPanel('home');
+  };
 
   const BackLink = () => (
-    <button
-      type="button"
-      onClick={() => { setPanel('home'); setPwMsg(''); setProfileMsg(''); setWooMsg(''); setSyncMsg(''); }}
-      className="mb-4 flex items-center gap-2 text-xs font-medium text-gray-500 transition hover:text-orange-400"
-    >
-      <span className="text-lg leading-none">←</span> Back
-    </button>
+    <Button type="button" variant="ghost" size="sm" className="mb-4 -ml-1 gap-1 text-xr-muted hover:text-xr-brand" onClick={goHome}>
+      <ChevronLeft className="h-4 w-4" />
+      Back
+    </Button>
   );
 
   const MenuRow = ({ icon, label, hint, onClick }) => (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3.5 text-left transition hover:border-orange-500/20 hover:bg-white/[0.04]"
+      className="flex w-full items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left transition hover:border-xr-brand/25 hover:bg-white/[0.05]"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0a0e1a] text-gray-300 ring-1 ring-white/10">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 bg-xr-bg/80 text-xr-secondary">
           <Ico d={icon} className="h-4 w-4" />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-white">{label}</p>
-          {hint && <p className="text-xs text-gray-500">{hint}</p>}
+          {hint && <p className="text-xs text-xr-muted">{hint}</p>}
         </div>
       </div>
-      <Ico d={ICONS.chevronR} className="h-4 w-4 shrink-0 text-gray-600" />
+      <Ico d={ICONS.chevronR} className="h-4 w-4 shrink-0 text-xr-muted" />
     </button>
   );
 
   return (
-    <div className="min-h-screen pb-24 md:pb-10">
-      <header className="sticky top-0 z-10 border-b border-[#1a2a45] bg-[#0a0e1a]/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-2xl px-4 py-4 sm:px-6 md:px-8 md:py-5">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">xRuto · Account</p>
-          <h2 className="mt-0.5 text-xl font-bold tracking-tight text-white md:text-2xl">
-            {panel === 'home' ? 'Settings' : panel === 'profile' ? 'Profile' : panel === 'password' ? 'Security' : 'WooCommerce'}
-          </h2>
-          <p className="mt-0.5 text-sm text-gray-500">
-            {panel === 'home' ? 'Profile, password, and integrations' : panel === 'password' ? 'Change your account password' : panel === 'woocommerce' ? 'Connect stores and sync orders' : 'How you appear in the app'}
-          </p>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6 md:px-8">
+    <Page size="sm" className="min-h-0">
+      <div className="space-y-6">
         {panel === 'home' && (
           <>
-            <div className="glass-card flex flex-col items-center rounded-2xl border border-white/10 px-6 py-8 text-center">
-              <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-500">Signed in</div>
-              <div className="mt-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 text-xl font-bold text-white shadow-lg shadow-orange-500/25">
+            <p className="text-sm text-xr-muted">Profile, password, and store connections.</p>
+            <UiCard variant="glass" className="flex flex-col items-center px-6 py-8 text-center">
+              <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-xr-muted">Signed in</div>
+              <div className="mt-3 flex h-16 w-16 items-center justify-center rounded-card bg-gradient-to-br from-xr-brand to-amber-600 text-xl font-bold text-black shadow-lg shadow-xr-brand/25">
                 {initials}
               </div>
               <p className="mt-3 text-base font-semibold text-white">{user?.name || 'User'}</p>
-              <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Administrator' : 'Driver'}</p>
-              {user?.email && <p className="mt-2 max-w-full truncate text-xs text-gray-600">{user.email}</p>}
-            </div>
+              <p className="text-xs text-xr-muted">{user?.role === 'admin' ? 'Administrator' : 'Driver'}</p>
+              {user?.email && <p className="mt-2 max-w-full truncate text-xs text-xr-subtle">{user.email}</p>}
+            </UiCard>
 
             <div className="space-y-2">
               <MenuRow icon={ICONS.edit} label="Profile" hint="Display name shown in the app" onClick={() => setPanel('profile')} />
@@ -553,128 +696,136 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={onLogout}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/5 py-3 text-sm font-medium text-red-300 transition hover:bg-red-500/15"
-            >
+            <Button type="button" variant="danger" className="w-full gap-2" onClick={onLogout}>
               <Ico d={ICONS.logout} className="h-4 w-4" />
               Log out
-            </button>
+            </Button>
           </>
         )}
 
         {panel === 'profile' && (
           <div>
             <BackLink />
-            <div className="glass-card rounded-2xl border border-white/10 p-5 sm:p-6">
-              <label className="mb-1.5 block text-xs font-medium text-gray-500">Display name</label>
-              <input className={inputCls} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
-              <p className="mt-2 text-xs text-gray-600">Saved in this browser with your session. For full account changes, contact your admin.</p>
-              <button
-                type="button"
-                onClick={saveProfileName}
-                className="mt-4 w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
-              >
+            <h2 className="text-xl font-bold tracking-tight text-white">Profile</h2>
+            <p className="mt-1 text-sm text-xr-muted">How you appear in the app.</p>
+            <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
+              <div>
+                <label className="mb-1.5 block text-caption font-medium uppercase tracking-wider text-xr-muted">Display name</label>
+                <input className={inputCls} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" />
+              </div>
+              <p className="text-xs text-xr-subtle">Saved in this browser with your session. For full account changes, contact your admin.</p>
+              <Button type="button" variant="primary" className="w-full" onClick={saveProfileName}>
                 Save display name
-              </button>
-              {profileMsg && <p className={`mt-2 text-xs ${profileMsg.includes('saved') ? 'text-emerald-400' : 'text-red-400'}`}>{profileMsg}</p>}
-            </div>
+              </Button>
+            </UiCard>
           </div>
         )}
 
         {panel === 'password' && (
           <div>
             <BackLink />
-            <div className="glass-card rounded-2xl border border-white/10 p-5 sm:p-6 space-y-4">
+            <h2 className="text-xl font-bold tracking-tight text-white">Security</h2>
+            <p className="mt-1 text-sm text-xr-muted">Change your account password.</p>
+            <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-500">Current password</label>
-                <input type="password" className={inputCls} value={currentPw} onChange={e => setCurrentPw(e.target.value)} autoComplete="current-password" />
+                <label className="mb-1.5 block text-caption font-medium uppercase tracking-wider text-xr-muted">Current password</label>
+                <input type="password" className={inputCls} value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} autoComplete="current-password" />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-500">New password</label>
-                <input type="password" className={inputCls} value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
+                <label className="mb-1.5 block text-caption font-medium uppercase tracking-wider text-xr-muted">New password</label>
+                <input type="password" className={inputCls} value={newPw} onChange={(e) => setNewPw(e.target.value)} autoComplete="new-password" />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-500">Confirm new password</label>
-                <input type="password" className={inputCls} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} autoComplete="new-password" />
+                <label className="mb-1.5 block text-caption font-medium uppercase tracking-wider text-xr-muted">Confirm new password</label>
+                <input type="password" className={inputCls} value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} autoComplete="new-password" />
               </div>
-              <button
-                type="button"
-                disabled={pwLoading}
-                onClick={submitPasswordChange}
-                className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
-              >
-                {pwLoading ? 'Updating…' : 'Update password'}
-              </button>
-              {pwMsg && <p className={`text-xs ${pwMsg.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>{pwMsg}</p>}
-            </div>
+              <Button type="button" variant="primary" className="w-full" disabled={pwLoading} loading={pwLoading} onClick={submitPasswordChange}>
+                Update password
+              </Button>
+            </UiCard>
           </div>
         )}
 
         {panel === 'contact' && (
           <div>
             <BackLink />
-            <div className="glass-card rounded-2xl border border-white/10 p-5 sm:p-6 space-y-3 text-sm text-gray-400">
-              <p>For product support, billing, or technical help, email <span className="text-orange-400/90">support@xruto.com</span>.</p>
-              <p className="text-xs text-gray-600">Response times are typically one business day.</p>
-            </div>
+            <h2 className="text-xl font-bold tracking-tight text-white">Contact</h2>
+            <p className="mt-1 text-sm text-xr-muted">We respond within one business day.</p>
+            <UiCard variant="glass" className="mt-4 space-y-3 p-5 text-sm text-xr-secondary sm:p-6">
+              <p>
+                For product support, billing, or technical help, email{' '}
+                <a href="mailto:support@xruto.com" className="font-medium text-xr-brand hover:underline">
+                  support@xruto.com
+                </a>
+                .
+              </p>
+              <p className="text-xs text-xr-muted">Typical response time is one business day.</p>
+            </UiCard>
           </div>
         )}
 
         {panel === 'woocommerce' && user?.role === 'admin' && (
           <div>
             <BackLink />
-            <div className="glass-card space-y-4 rounded-2xl border border-white/10 p-5 sm:p-6">
+            <h2 className="text-xl font-bold tracking-tight text-white">WooCommerce</h2>
+            <p className="mt-1 text-sm text-xr-muted">Connect stores and sync orders.</p>
+            <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
               <div>
                 <h3 className="text-sm font-semibold text-white">Connected stores</h3>
-                <p className="text-xs text-gray-500">REST API keys from WooCommerce → Settings → Advanced → REST API</p>
+                <p className="mt-1 text-xs text-xr-muted">REST API keys from WooCommerce → Settings → Advanced → REST API</p>
               </div>
               {wooStores.length === 0 ? (
-                <p className="text-xs text-gray-600">No stores yet. Add credentials below.</p>
+                <p className="text-xs text-xr-subtle">No stores yet. Add credentials below.</p>
               ) : (
                 <div className="space-y-2">
-                  {wooStores.map(store => (
-                    <div key={store.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] px-4 py-3">
+                  {wooStores.map((store) => (
+                    <div
+                      key={store.id}
+                      className="flex items-center justify-between gap-3 rounded-control border border-white/10 bg-xr-bg/40 px-4 py-3"
+                    >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white">{store.name}</p>
-                        <p className="truncate text-xs text-gray-500">{store.url}</p>
+                        <p className="truncate text-xs text-xr-muted">{store.url}</p>
                       </div>
-                      <button type="button" onClick={() => removeWooStore(store.id)} className="shrink-0 rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-red-500/10">
+                      <Button type="button" variant="ghost" size="sm" className="shrink-0 text-red-300 hover:bg-xr-danger/10" onClick={() => removeWooStore(store.id)}>
                         Remove
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="border-t border-white/5 pt-4 space-y-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Add store</p>
+              <div className="space-y-3 border-t border-white/5 pt-4">
+                <p className="text-caption font-medium uppercase tracking-wider text-xr-muted">Add store</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input className={inputCls} placeholder="Store name" value={wooForm.name} onChange={e => setWooForm(f => ({ ...f, name: e.target.value }))} />
-                  <input className={inputCls} placeholder="https://yourstore.com" value={wooForm.url} onChange={e => setWooForm(f => ({ ...f, url: e.target.value }))} />
+                  <input className={inputCls} placeholder="Store name" value={wooForm.name} onChange={(e) => setWooForm((f) => ({ ...f, name: e.target.value }))} />
+                  <input className={inputCls} placeholder="https://yourstore.com" value={wooForm.url} onChange={(e) => setWooForm((f) => ({ ...f, url: e.target.value }))} />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input className={inputCls} placeholder="Consumer key" value={wooForm.consumer_key} onChange={e => setWooForm(f => ({ ...f, consumer_key: e.target.value }))} />
-                  <input className={inputCls} type="password" placeholder="Consumer secret" value={wooForm.consumer_secret} onChange={e => setWooForm(f => ({ ...f, consumer_secret: e.target.value }))} />
+                  <input className={inputCls} placeholder="Consumer key" value={wooForm.consumer_key} onChange={(e) => setWooForm((f) => ({ ...f, consumer_key: e.target.value }))} />
+                  <input
+                    className={inputCls}
+                    type="password"
+                    placeholder="Consumer secret"
+                    value={wooForm.consumer_secret}
+                    onChange={(e) => setWooForm((f) => ({ ...f, consumer_secret: e.target.value }))}
+                  />
                 </div>
-                <SlideButton label="Slide to add store" onConfirm={addWooStore} loading={wooLoading} />
-                {wooMsg && <p className={`text-xs ${wooMsg.includes('success') ? 'text-emerald-400' : 'text-red-400'}`}>{wooMsg}</p>}
+                <SlideToConfirm label="Slide to add store" onConfirm={addWooStore} loading={wooLoading} />
               </div>
               {wooStores.length > 0 && (
                 <div className="border-t border-white/5 pt-4">
-                  <SlideButton label="Slide to sync orders" onConfirm={syncWooOrders} loading={syncLoading} />
-                  {syncMsg && <p className={`mt-2 text-xs ${syncMsg.includes('Error') || syncMsg.toLowerCase().includes('fail') ? 'text-red-400' : 'text-emerald-400'}`}>{syncMsg}</p>}
+                  <SlideToConfirm label="Slide to sync orders" onConfirm={syncWooOrders} loading={syncLoading} />
                 </div>
               )}
-            </div>
+            </UiCard>
           </div>
         )}
       </div>
-    </div>
+    </Page>
   );
 };
 
-// Main App — sidebar on desktop, bottom nav on mobile
+// Main App — AppShell: sidebar (md+), bottom tab bar (mobile)
 const App = () => {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('admin');
@@ -716,7 +867,20 @@ const App = () => {
     });
   }, []);
 
-  if (!authChecked) return <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center"><div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" /></div>;
+  if (!authChecked)
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-xr-bg px-4">
+        <div aria-hidden className="pointer-events-none fixed inset-0 bg-grid opacity-[0.25]" />
+        <UiCard variant="glass" className="relative z-10 flex w-full max-w-xs flex-col items-center gap-4 p-8">
+          <Skeleton className="h-12 w-12 rounded-card" />
+          <div className="w-full space-y-2">
+            <Skeleton className="mx-auto h-4 w-28" />
+            <Skeleton className="mx-auto h-3 w-36" />
+          </div>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-xr-brand/25 border-t-xr-brand" aria-hidden />
+        </UiCard>
+      </div>
+    );
   if (!user) return <LoginScreen onLogin={handleLogin} />;
 
   const isAdmin = user.role === 'admin';
@@ -724,29 +888,20 @@ const App = () => {
   const renderContent = () => {
     if (!isAdmin && currentView !== 'analytics' && currentView !== 'settings') return <DriverRoutes />;
     switch (currentView) {
-      case 'admin':     return <MyAdmin onNavigateToDashboard={() => setCurrentView('admin')} />;
+      case 'admin':     return <MyAdmin onNavigateToOrders={() => setCurrentView('orders')} />;
       case 'orders':    return <Orders onNavigateBack={() => setCurrentView('admin')} onNavigateToRouteDetail={() => setCurrentView('routes')} />;
       case 'routes':    return <DriverRoutes />;
       case 'analytics': return <AnalyticsScreen />;
       case 'settings':  return <SettingsScreen user={user} onLogout={doLogout} onUserUpdate={updateLocalUser} />;
-      default:          return isAdmin ? <MyAdmin /> : <DriverRoutes />;
+      default:          return isAdmin ? <MyAdmin onNavigateToOrders={() => setCurrentView('orders')} /> : <DriverRoutes />;
     }
   };
 
   return (
-    <div className="bg-[#0a0e1a] min-h-screen flex text-white">
-      {/* Desktop sidebar */}
-      <SideNav currentView={currentView} onChange={setCurrentView} isAdmin={isAdmin} user={user} onLogout={doLogout} />
-
-      {/* Main content area */}
-      <main className="flex-1 overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 min-h-screen">
-        {renderContent()}
-      </main>
-
-      {/* Mobile bottom nav */}
-      <BottomNav currentView={currentView} onChange={setCurrentView} isAdmin={isAdmin} />
+    <AppShell currentView={currentView} onChangeView={setCurrentView} user={user} onLogout={doLogout}>
+      {renderContent()}
       <PWAInstallPrompt />
-    </div>
+    </AppShell>
   );
 };
 

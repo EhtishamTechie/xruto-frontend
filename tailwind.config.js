@@ -8,12 +8,26 @@ export default {
     extend: {
       colors: {
         xr: {
-          bg: '#0A0F1E',
-          sidebar: '#111827',
-          card: '#1C2333',
-          surface: '#0D1320',
+          // Required layered dark palette (SaaS style)
+          bg: '#0B0F17',
+          surface: '#111827',
+          elevated: '#1F2937',
+          sidebar: '#0F172A',
+
+          // Lines / borders
+          line: '#1F2937',
           border: 'rgba(255,255,255,0.06)',
-          amber: '#F59E0B',
+
+          // Text
+          text: '#E5E7EB',
+          secondary: '#9CA3AF',
+          muted: '#6B7280',
+
+          // Accent + semantic (soft)
+          brand: '#F59E0B',
+          success: '#22C55E',
+          danger: '#F87171',
+          info: '#60A5FA',
         },
       },
       fontFamily: {
@@ -21,8 +35,32 @@ export default {
         heading: ['"DM Sans"', 'Inter', 'ui-sans-serif', 'system-ui'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace'],
       },
+      spacing: {
+        18: '4.5rem',
+        22: '5.5rem',
+        26: '6.5rem',
+      },
+      borderRadius: {
+        // Enforce spec: cards 12px, controls 8px
+        card: '12px',
+        control: '8px',
+      },
+      fontSize: {
+        // Typography scale (mapped to Tailwind tokens)
+        display: ['2.25rem', { lineHeight: '1.1', fontWeight: '600', letterSpacing: '-0.03em' }],
+        h1: ['28px', { lineHeight: '1.15', fontWeight: '600', letterSpacing: '-0.02em' }],
+        h2: ['20px', { lineHeight: '1.2', fontWeight: '500', letterSpacing: '-0.01em' }],
+        h3: ['17px', { lineHeight: '1.35', fontWeight: '600', letterSpacing: '-0.01em' }],
+        body: ['15px', { lineHeight: '1.6', fontWeight: '400' }],
+        caption: ['12px', { lineHeight: '1.4', fontWeight: '500' }],
+      },
+      maxWidth: {
+        readable: '42rem',
+        section: '72rem',
+      },
       boxShadow: {
-        panel: '0 4px 24px rgba(0,0,0,0.4)',
+        panel: '0 10px 30px rgba(0,0,0,0.35)',
+        soft: '0 6px 18px rgba(0,0,0,0.28)',
       },
       keyframes: {
         'fade-up': {

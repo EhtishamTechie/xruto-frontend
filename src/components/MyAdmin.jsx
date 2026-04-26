@@ -1,5 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { Toggle } from '../ui/Toggle';
+import { StatCard } from '../ui/StatCard';
+import { SlideToConfirm } from '../ui/SlideToConfirm';
+import { EmptyState } from '../ui/EmptyState';
+import { useToast } from '../ui/ToastContext.jsx';
+import { Settings, Users, MapPinned, Truck, Warehouse, UserCircle2 } from 'lucide-react';
 
 const Ico = ({ d, className = 'w-5 h-5', fill = false }) => (
   <svg className={className} fill={fill ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke={fill ? 'none' : 'currentColor'} strokeWidth={1.8}>
@@ -21,61 +29,30 @@ const ICON = {
   phone: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
 };
 
-const SlideButton = ({ label, onConfirm, loading = false, disabled = false }) => {
-  const trackRef = useRef(null);
-  const [dragging, setDragging] = useState(false);
-  const [offsetX, setOffsetX] = useState(0);
-  const getMaxX = () => (trackRef.current ? trackRef.current.offsetWidth - 48 : 200);
-  const handleMove = (clientX) => { if (!dragging || !trackRef.current) return; const rect = trackRef.current.getBoundingClientRect(); setOffsetX(Math.max(0, Math.min(clientX - rect.left - 24, getMaxX()))); };
-  const handleEnd = () => { if (!dragging) return; setDragging(false); if (offsetX >= getMaxX() * 0.85) onConfirm(); setOffsetX(0); };
-  return (
-    <div ref={trackRef} className={`relative h-12 rounded-full overflow-hidden select-none ${disabled || loading ? 'opacity-50' : ''}`}
-      style={{ background: 'linear-gradient(135deg, #0f1b2e, #162540)', border: '1px solid rgba(59,130,246,0.25)' }}
-      onMouseMove={e => handleMove(e.clientX)} onMouseUp={handleEnd} onMouseLeave={handleEnd}
-      onTouchMove={e => handleMove(e.touches[0].clientX)} onTouchEnd={handleEnd}>
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="text-white/70 text-sm font-medium">{loading ? 'Processing...' : label}</span>
-      </div>
-      <div className="absolute top-1 left-1 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 cursor-grab z-10"
-        style={{ transform: `translateX(${offsetX}px)` }}
-        onMouseDown={e => { e.preventDefault(); if (!loading && !disabled) setDragging(true); }}
-        onTouchStart={() => { if (!loading && !disabled) setDragging(true); }}>
-        {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          : <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}
-      </div>
-    </div>
-  );
-};
-
-const Toggle = ({ isOn, onChange, disabled }) => (
-  <div onClick={() => !disabled && onChange(!isOn)}
-    className={`w-11 h-6 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${isOn ? 'bg-orange-500' : 'bg-gray-700'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
-    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${isOn ? 'translate-x-5' : ''}`} />
-  </div>
-);
+// Toggle moved to ui/Toggle
 
 const Radio = ({ checked, onChange, disabled, label, sublabel }) => (
   <div className={`flex items-center gap-3 ${disabled ? 'opacity-50' : 'cursor-pointer'}`} onClick={() => !disabled && onChange()}>
-    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${checked ? 'border-orange-500' : 'border-gray-600'}`}>
-      {checked && <div className="w-2.5 h-2.5 bg-orange-500 rounded-full" />}
+    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${checked ? 'border-xr-brand' : 'border-gray-600'}`}>
+      {checked && <div className="w-2.5 h-2.5 bg-xr-brand rounded-full" />}
     </div>
     <div><p className="text-sm font-medium text-white">{label}</p>{sublabel && <p className="text-xs text-gray-500">{sublabel}</p>}</div>
   </div>
 );
 
 const Stepper = ({ label, value, onChange, disabled, helpText, min = 1, max = 100 }) => (
-  <div className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl p-4">
+  <div className="bg-xr-bg border border-xr-line rounded-xl p-4">
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-1.5">
         <span className="text-sm text-gray-300">{label}</span>
         {helpText && <Ico d={ICON.info} className="w-3.5 h-3.5 text-gray-600" />}
       </div>
-      <div className="flex items-center gap-2 bg-[#111b2e] rounded-lg p-0.5">
+      <div className="flex items-center gap-2 bg-xr-panel rounded-lg p-0.5">
         <button onClick={() => !disabled && onChange(Math.max(min, value - 1))} disabled={disabled || value <= min}
-          className="w-8 h-8 rounded-md bg-[#1a2a45] text-white text-lg flex items-center justify-center disabled:opacity-30 hover:bg-[#243550] transition">-</button>
-        <span className="text-sm font-bold text-white w-8 text-center">{value}</span>
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-white transition hover:bg-xr-line disabled:opacity-30">-</button>
+        <span className="w-8 text-center text-sm font-bold text-white">{value}</span>
         <button onClick={() => !disabled && onChange(Math.min(max, value + 1))} disabled={disabled || value >= max}
-          className="w-8 h-8 rounded-md bg-[#1a2a45] text-white text-lg flex items-center justify-center disabled:opacity-30 hover:bg-[#243550] transition">+</button>
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-white transition hover:bg-xr-line disabled:opacity-30">+</button>
       </div>
     </div>
   </div>
@@ -87,15 +64,15 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
   return (
     <div className="relative">
       <div onClick={() => !disabled && setOpen(!open)}
-        className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl px-4 py-3 flex justify-between items-center cursor-pointer">
+        className="bg-xr-bg border border-xr-line rounded-xl px-4 py-3 flex justify-between items-center cursor-pointer">
         <span className="text-sm text-gray-400">{selected?.label || placeholder}</span>
         <Ico d={ICON.chevDown} className={`w-4 h-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </div>
       {open && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#111b2e] border border-[#1a2a45] rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-xr-panel border border-xr-line rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
           {options.map(opt => (
             <div key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
-              className="px-4 py-2.5 hover:bg-[#1a2a45] cursor-pointer text-sm text-white transition">
+              className="cursor-pointer px-4 py-2.5 text-sm text-white transition hover:bg-xr-elevated">
               {opt.label}{opt.sub && <span className="text-xs text-gray-500 ml-2">{opt.sub}</span>}
             </div>
           ))}
@@ -105,12 +82,10 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
   );
 };
 
-const inputCls = 'w-full bg-[#0a0e1a] border border-[#1a2a45] rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500/50 transition';
+const inputCls = 'w-full bg-xr-bg border border-xr-line rounded-xl px-4 py-3 text-white text-sm placeholder-xr-subtle focus:outline-none focus:border-xr-brand/50 transition';
 
 const SectionCard = ({ title, subtitle, children, className = '' }) => (
-  <section
-    className={`rounded-2xl border border-[#1a2a45] bg-gradient-to-b from-[#111b2e] to-[#0d1524] p-5 shadow-lg shadow-black/25 sm:p-6 ${className}`}
-  >
+  <Card variant="glass" className={`p-5 sm:p-6 ${className}`}>
     {(title || subtitle) && (
       <header className="mb-4 border-b border-white/5 pb-3 sm:mb-5 sm:pb-4">
         {title && <h2 className="text-sm font-semibold tracking-tight text-white sm:text-base">{title}</h2>}
@@ -118,37 +93,20 @@ const SectionCard = ({ title, subtitle, children, className = '' }) => (
       </header>
     )}
     {children}
-  </section>
+  </Card>
 );
 
-const StatTile = ({ label, value, hint, tone = 'default' }) => {
-  const toneCls =
-    tone === 'blue'
-      ? 'text-blue-400'
-      : tone === 'green'
-        ? 'text-emerald-400'
-        : tone === 'amber'
-          ? 'text-amber-400'
-          : tone === 'orange'
-            ? 'text-orange-400'
-            : 'text-white';
-  return (
-    <div className="rounded-2xl border border-[#1a2a45] bg-[#0a0e1a]/80 p-4 ring-1 ring-inset ring-white/5 sm:p-5">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500 sm:text-xs">{label}</p>
-      <p className={`mt-1.5 text-2xl font-bold tabular-nums sm:text-3xl ${toneCls}`}>{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-gray-600">{hint}</p>}
-    </div>
-  );
-};
+// Stat tiles replaced by ui/StatCard
 
-const MyAdmin = ({ onNavigateToDashboard }) => {
+const MyAdmin = ({ onNavigateToOrders }) => {
+  const { toast } = useToast();
   const [settings, setSettings] = useState({});
   const [depots, setDepots] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [syncFlash, setSyncFlash] = useState(false);
   const [helpEnabled, setHelpEnabled] = useState(true);
   const [showTooltip, setShowTooltip] = useState(null);
   const [newDepot, setNewDepot] = useState({ name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '' });
@@ -163,6 +121,18 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
 
   useEffect(() => { loadAdminData(); }, []);
 
+  useEffect(() => {
+    if (!syncFlash) return;
+    const t = window.setTimeout(() => setSyncFlash(false), 2500);
+    return () => window.clearTimeout(t);
+  }, [syncFlash]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast.error(error);
+    setError('');
+  }, [error, toast]);
+
   const loadAdminData = async () => {
     try {
       setLoading(true);
@@ -176,7 +146,8 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
   const handleSettingChange = async (key, value) => {
     try { setSaving(true); await adminAPI.updateSettings({ [key]: value }); setSettings(prev => ({ ...prev, [key]: value }));
       if (key === 'enable_help_tooltips') setHelpEnabled(value);
-      setSuccess('Settings updated'); setTimeout(() => setSuccess(''), 3000);
+      toast.success('Settings updated');
+      setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
@@ -184,7 +155,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
     if (!newDepot.name || !newDepot.address) { setError('Depot name and address required'); return; }
     try { setSaving(true); await adminAPI.addDepot(newDepot);
       setNewDepot({ name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '' });
-      setShowAddDepot(false); await loadAdminData(); setSuccess('Depot added'); setTimeout(() => setSuccess(''), 3000);
+      setShowAddDepot(false); await loadAdminData(); toast.success('Depot added'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
@@ -195,13 +166,13 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
 
   const handleSaveDepotEdit = async () => {
     try { setSaving(true); await adminAPI.updateDepot(editingDepot, editDepotData); setEditingDepot(null); setEditDepotData({}); await loadAdminData();
-      setSuccess('Depot updated'); setTimeout(() => setSuccess(''), 3000);
+      toast.success('Depot updated'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
   const handleRemoveDepot = async (depotId) => {
     if (!confirm('Remove this depot?')) return;
-    try { setSaving(true); await adminAPI.removeDepot(depotId); await loadAdminData(); setSuccess('Depot removed'); setTimeout(() => setSuccess(''), 3000);
+    try { setSaving(true); await adminAPI.removeDepot(depotId); await loadAdminData(); toast.success('Depot removed'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
@@ -210,7 +181,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
     try { setSaving(true);
       await adminAPI.addDriver({ firstName: newDriver.firstName, lastName: newDriver.lastName, email: newDriver.email, password: newDriver.password || null, phone: newDriver.phone, depotId: newDriver.depotId || null, mpg: newDriver.mpg ? parseFloat(newDriver.mpg) : null, vehicleType: newDriver.vehicleType, vehicleCapacity: newDriver.vehicleCapacity ? parseInt(newDriver.vehicleCapacity) : null, licensePlate: newDriver.licensePlate, workingHours: newDriver.workingHours, maxRoutesPerDay: newDriver.maxRoutesPerDay ? parseInt(newDriver.maxRoutesPerDay) : null, notes: newDriver.notes });
       setNewDriver({ firstName: '', lastName: '', email: '', password: '', phone: '', depotId: '', mpg: '', vehicleType: 'van', vehicleCapacity: '50', licensePlate: '', workingHours: '{"start": "08:00", "end": "18:00"}', maxRoutesPerDay: '3', notes: '' });
-      setShowAddDriver(false); await loadAdminData(); setSuccess('Driver added'); setTimeout(() => setSuccess(''), 3000);
+      setShowAddDriver(false); await loadAdminData(); toast.success('Driver added'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
@@ -221,24 +192,24 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
 
   const handleSaveDriverEdit = async () => {
     try { setSaving(true); await adminAPI.updateDriver(editingDriver, editDriverData); setEditingDriver(null); setEditDriverData({}); await loadAdminData();
-      setSuccess('Driver updated'); setTimeout(() => setSuccess(''), 3000);
+      toast.success('Driver updated'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
   const handleRemoveDriver = async (driverId) => {
     if (!confirm('Remove this driver?')) return;
-    try { setSaving(true); await adminAPI.removeDriver(driverId); await loadAdminData(); setSuccess('Driver removed'); setTimeout(() => setSuccess(''), 3000);
+    try { setSaving(true); await adminAPI.removeDriver(driverId); await loadAdminData(); toast.success('Driver removed'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-xr-brand/30 border-t-xr-brand" />
     </div>
   );
 
   const DepotCard = ({ depot }) => editingDepot === depot.id ? (
-    <div className="bg-[#0a0e1a] border border-blue-500/30 rounded-xl p-4 space-y-3">
+    <div className="space-y-3 rounded-card border border-xr-info/30 bg-xr-surface/80 p-4">
       <div className="flex justify-between items-center"><span className="text-sm font-medium text-blue-400">Editing Depot</span>
         <div className="flex gap-2">
           <button onClick={handleSaveDepotEdit} className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-lg">Save</button>
@@ -257,14 +228,14 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
       </div>
     </div>
   ) : (
-    <div className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl p-4 flex justify-between items-start">
+    <div className="flex items-start justify-between rounded-card border border-white/10 bg-xr-bg/70 p-4">
       <div>
-        <div className="flex items-center gap-2 mb-1">
+        <div className="mb-1 flex items-center gap-2">
           <span className="text-sm font-medium text-white">{depot.name}</span>
-          {depot.is_primary && <span className="text-[10px] text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">Primary</span>}
+          {depot.is_primary && <span className="rounded-full bg-xr-brand/15 px-2 py-0.5 text-[10px] text-amber-200">Primary</span>}
         </div>
-        <p className="text-xs text-gray-500">{depot.address}</p>
-        <p className="text-xs text-gray-600 mt-1">{depot.driver_count || 0} drivers &middot; Cap: {depot.capacity || 'N/A'}</p>
+        <p className="text-xs text-xr-muted">{depot.address}</p>
+        <p className="mt-1 text-xs text-xr-subtle">{depot.driver_count || 0} drivers &middot; Cap: {depot.capacity || 'N/A'}</p>
       </div>
       <div className="flex gap-2">
         <button onClick={() => handleEditDepot(depot)} className="text-blue-400 hover:text-blue-300 p-1"><Ico d={ICON.edit} className="w-4 h-4" /></button>
@@ -274,7 +245,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
   );
 
   const DriverCard = ({ driver }) => editingDriver === driver.id ? (
-    <div className="bg-[#0a0e1a] border border-blue-500/30 rounded-xl p-4 space-y-3">
+    <div className="space-y-3 rounded-card border border-xr-info/30 bg-xr-surface/80 p-4">
       <div className="flex justify-between items-center"><span className="text-sm font-medium text-blue-400">Editing Driver</span>
         <div className="flex gap-2">
           <button onClick={handleSaveDriverEdit} className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-lg">Save</button>
@@ -296,11 +267,11 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
       </div>
     </div>
   ) : (
-    <div className="bg-[#0a0e1a] border border-[#1a2a45] rounded-xl p-4 flex justify-between items-start">
+    <div className="flex items-start justify-between rounded-card border border-white/10 bg-xr-bg/70 p-4">
       <div>
         <span className="text-sm font-medium text-white">{driver.name || `${driver.first_name || ''} ${driver.last_name || ''}`}</span>
-        <p className="text-xs text-gray-500 mt-0.5">{driver.email}</p>
-        <p className="text-xs text-gray-600 mt-0.5">{driver.details || ''} {driver.mpg ? `| ${driver.mpg} MPG` : ''}</p>
+        <p className="mt-0.5 text-xs text-xr-muted">{driver.email}</p>
+        <p className="mt-0.5 text-xs text-xr-subtle">{driver.details || ''} {driver.mpg ? `| ${driver.mpg} MPG` : ''}</p>
       </div>
       <div className="flex gap-2">
         <button onClick={() => handleEditDriver(driver)} className="text-blue-400 hover:text-blue-300 p-1"><Ico d={ICON.edit} className="w-4 h-4" /></button>
@@ -318,35 +289,34 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
   const navAppLabel = settings.navigation_app_preference === 'here' ? 'HERE Maps' : 'Google Maps';
 
   return (
-    <div className="relative min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
-
-      {/* Sticky top: title + tools + tab nav */}
-      <header className="sticky top-0 z-20 border-b border-[#1a2a45] bg-[#0a0e1a]/95 shadow-[0_1px_0_rgba(0,0,0,0.35)] backdrop-blur-xl">
-        <div className="mx-auto max-w-[1600px] px-4 pt-4 sm:px-5 md:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">xRuto · Administration</p>
-              <h1 className="mt-0.5 text-xl font-bold tracking-tight text-white sm:text-2xl">Control center</h1>
-              <p className="mt-0.5 max-w-xl text-sm text-gray-500">Configure routing, fleet, and integrations. Colours and accents match your existing theme.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#1a2a45] bg-[#111b2e] px-2.5 py-1.5 text-[11px] text-gray-400 sm:text-xs">
-                <span className={`h-1.5 w-1.5 rounded-full ${saving ? 'animate-pulse bg-amber-400' : 'bg-emerald-400'}`} aria-hidden />
-                {saving ? 'Saving changes…' : success ? 'All changes applied' : 'In sync with server'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setHelpEnabled(!helpEnabled)}
-                className={`shrink-0 rounded-xl px-3 py-2 text-xs font-medium transition sm:px-4 ${helpEnabled ? 'bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/30' : 'bg-[#111b2e] text-gray-500 ring-1 ring-[#1a2a45] hover:text-gray-300'}`}
-              >
-                {helpEnabled ? 'Hide tips' : 'Show tips'}
-              </button>
-            </div>
+    <div className="space-y-8">
+      <div className="relative overflow-hidden rounded-card border border-xr-brand/25 bg-gradient-to-br from-xr-elevated/90 via-xr-surface/95 to-xr-bg p-6 shadow-panel sm:p-8">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-xr-brand/10 blur-3xl" />
+        <div className="relative mx-auto max-w-section">
+          <p className="text-caption font-medium uppercase tracking-wider text-xr-brand">Control center</p>
+          <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight text-white sm:text-display sm:leading-[1.1]">
+            Run operations from one place
+          </h1>
+          <p className="mt-3 max-w-readable text-sm text-xr-muted sm:text-body">
+            Tune depots, drivers, and routing—then move the day through the Orders pipeline when you are ready.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button type="button" variant="primary" className="min-h-11 px-5" onClick={() => onNavigateToOrders?.()}>
+              Open order pipeline
+            </Button>
+            <Button type="button" variant="secondary" className="min-h-11" onClick={() => setActiveSection('fleet')}>
+              Manage fleet
+            </Button>
           </div>
+        </div>
+      </div>
 
-          <nav className="scrollbar-thin -mx-1 mt-5 flex gap-1 overflow-x-auto pb-1 md:mt-6" role="tablist" aria-label="Admin sections">
-            {adminTabs.map(tab => {
+      {/* Local page controls (AppShell already provides global title/breadcrumb) */}
+      <Card variant="soft" className="p-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* Segmented tabs */}
+          <div className="inline-flex w-full overflow-x-auto rounded-control border border-white/10 bg-white/[0.03] p-1 md:w-auto">
+            {adminTabs.map((tab) => {
               const active = activeSection === tab.id;
               return (
                 <button
@@ -355,22 +325,39 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setActiveSection(tab.id)}
-                  className={`shrink-0 rounded-t-xl border px-3 py-2.5 text-left text-sm font-medium transition sm:min-w-[7.5rem] sm:px-4 ${
+                  className={`whitespace-nowrap rounded-control px-4 py-2 text-sm font-medium transition ${
                     active
-                      ? 'border-b-transparent border-[#1a2a45] bg-[#111b2e] text-white ring-1 ring-[#1a2a45]'
-                      : 'border-transparent text-gray-500 hover:bg-white/[0.04] hover:text-gray-300'
+                      ? 'bg-white/[0.06] text-white ring-1 ring-inset ring-xr-brand/20'
+                      : 'text-xr-secondary hover:text-xr-text'
                   }`}
                 >
                   {tab.label}
                 </button>
               );
             })}
-          </nav>
-        </div>
-        <div className="h-0 border-b border-[#1a2a45]" />
-      </header>
+          </div>
 
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-5 md:px-8">
+          {/* Status + actions */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-xr-secondary">
+              <span className={`h-1.5 w-1.5 rounded-full ${saving ? 'animate-pulse bg-amber-300' : 'bg-emerald-300'}`} aria-hidden />
+              {saving ? 'Saving…' : syncFlash ? 'Synced' : 'In sync'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setHelpEnabled(!helpEnabled)}
+              className={`rounded-control border px-3 py-2 text-xs font-semibold transition ${
+                helpEnabled
+                  ? 'border-xr-brand/25 bg-xr-brand/10 text-amber-200'
+                  : 'border-white/10 bg-white/[0.03] text-xr-secondary hover:bg-white/[0.06]'
+              }`}
+            >
+              {helpEnabled ? 'Hide tips' : 'Show tips'}
+            </button>
+          </div>
+        </div>
+      </Card>
+
         {showTooltip && (
           <div className="mt-4 flex justify-between gap-2 rounded-xl border border-blue-500/25 bg-blue-500/10 p-3 text-xs text-blue-300 sm:mt-5">
             <span>{showTooltip}</span>
@@ -379,27 +366,37 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
             </button>
           </div>
         )}
-        {error && (
-          <div className="mt-4 flex justify-between gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-300 sm:mt-5">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError('')} className="shrink-0 text-red-400/70 hover:text-red-300" aria-label="Dismiss error">
-              &times;
-            </button>
-          </div>
-        )}
-
-        <div className="mt-4 space-y-5 pb-4 sm:mt-5 sm:space-y-6 md:pb-8">
+        <div className="space-y-6">
           {activeSection === 'overview' && (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                <StatTile label="Depots" value={depots.length} hint="Active locations" tone="blue" />
-                <StatTile label="Drivers" value={drivers.length} hint="Fleet roster" tone="green" />
-                <StatTile label="Nav app" value={navAppLabel} hint="Default for routes" tone="amber" />
-                <StatTile
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  icon={<MapPinned className="h-4 w-4" />}
+                  label="Depots"
+                  value={depots.length}
+                  hint="Active locations"
+                  tone="info"
+                />
+                <StatCard
+                  icon={<Users className="h-4 w-4" />}
+                  label="Drivers"
+                  value={drivers.length}
+                  hint="Fleet roster"
+                  tone="success"
+                />
+                <StatCard
+                  icon={<Settings className="h-4 w-4" />}
+                  label="Nav app"
+                  value={navAppLabel}
+                  hint="Default for routes"
+                  tone="brand"
+                />
+                <StatCard
+                  icon={<Truck className="h-4 w-4" />}
                   label="Drivers today"
                   value={String(settings.drivers_today_count ?? 3)}
                   hint="Planned headcount"
-                  tone="orange"
+                  tone="brand"
                 />
               </div>
 
@@ -407,26 +404,26 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                 <div className="lg:col-span-2">
                   <SectionCard title="At a glance" subtitle="Key operational switches">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:p-4">
+                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4">
                         <div>
                           <p className="text-xs font-medium text-gray-400">Auto-assign routes</p>
                           <p className="text-[11px] text-gray-600">Distribute work automatically when possible</p>
                         </div>
-                        <Toggle isOn={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
+                        <Toggle checked={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
                       </div>
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:p-4">
+                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4">
                         <div>
                           <p className="text-xs font-medium text-gray-400">Stock refill logic</p>
                           <p className="text-[11px] text-gray-600">Enable depot return handling</p>
                         </div>
-                        <Toggle isOn={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
+                        <Toggle checked={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
                       </div>
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-3 sm:col-span-2 sm:p-4">
+                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4 sm:col-span-2">
                         <div>
                           <p className="text-xs font-medium text-gray-400">Admin in delivery team</p>
                           <p className="text-[11px] text-gray-600">Include the admin user as a driver in planning</p>
                         </div>
-                        <Toggle isOn={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
+                        <Toggle checked={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
                       </div>
                     </div>
                   </SectionCard>
@@ -458,7 +455,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                       />
                     </div>
                   </div>
-                  <div className="rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-4">
+                  <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
                     <span className="text-sm font-medium text-gray-300">Preferred navigation app</span>
                     {helpEnabled && <p className="mb-2 mt-1 text-xs text-orange-400/80">Google Maps supports 25 stops, HERE Maps supports 50 stops per route</p>}
                     <div className="mt-2 space-y-2">
@@ -482,7 +479,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                   />
                   <div className="flex items-center justify-between border-t border-white/5 pt-2">
                     <span className="text-sm text-gray-300">Auto-assign routes</span>
-                    <Toggle isOn={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
+                    <Toggle checked={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
                   </div>
                 </div>
               </SectionCard>
@@ -521,9 +518,12 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                     </div>
                   </div>
                   <div className="pt-1">
-                    <SlideButton
+                    <SlideToConfirm
                       label={saving ? 'Saving…' : 'Slide to save configuration'}
-                      onConfirm={() => setSuccess('Configuration saved!')}
+                      onConfirm={() => {
+                        toast.success('Configuration saved!');
+                        setSyncFlash(true);
+                      }}
                       loading={saving}
                     />
                   </div>
@@ -531,11 +531,11 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                 <SectionCard title="Inventory behaviour" subtitle="Refill and admin participation">
                   <div className="flex items-center justify-between py-1">
                     <span className="text-sm text-gray-300">Enable stock refill logic</span>
-                    <Toggle isOn={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
+                    <Toggle checked={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
                   </div>
                   <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-3">
                     <span className="text-sm text-gray-300">Include admin in delivery team</span>
-                    <Toggle isOn={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
+                    <Toggle checked={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
                   </div>
                 </SectionCard>
               </div>
@@ -559,11 +559,25 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                     {showAddDepot ? 'Cancel' : 'Add depot'}
                   </button>
                 </div>
+                {depots.length === 0 && !showAddDepot ? (
+                  <EmptyState
+                    className="py-10"
+                    icon={<Warehouse className="h-7 w-7" strokeWidth={1.5} />}
+                    title="No depots yet"
+                    description="Add at least one depot so routes have a start and return point."
+                    action={
+                      <Button type="button" variant="primary" className="min-h-11" onClick={() => setShowAddDepot(true)}>
+                        Add depot
+                      </Button>
+                    }
+                  />
+                ) : (
                 <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
                   {depots.map(depot => (
                     <DepotCard key={depot.id} depot={depot} />
                   ))}
                 </div>
+                )}
                 {showAddDepot && (
                   <div className="mt-4 space-y-3 rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/5 to-blue-600/5 p-4">
                     <h3 className="text-sm font-medium text-blue-400">New depot</h3>
@@ -578,7 +592,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                       <input className={inputCls} placeholder="Phone" value={newDepot.contactPhone} onChange={e => setNewDepot(p => ({ ...p, contactPhone: e.target.value }))} disabled={saving} />
                     </div>
                     <input className={inputCls} type="email" placeholder="Contact email" value={newDepot.contactEmail} onChange={e => setNewDepot(p => ({ ...p, contactEmail: e.target.value }))} disabled={saving} />
-                    <SlideButton label={saving ? 'Adding…' : 'Slide to add depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !newDepot.address} />
+                    <SlideToConfirm label={saving ? 'Adding…' : 'Slide to add depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !newDepot.address} />
                   </div>
                 )}
               </SectionCard>
@@ -598,11 +612,25 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                     {showAddDriver ? 'Cancel' : 'Add driver'}
                   </button>
                 </div>
+                {drivers.length === 0 && !showAddDriver ? (
+                  <EmptyState
+                    className="py-10"
+                    icon={<UserCircle2 className="h-7 w-7" strokeWidth={1.5} />}
+                    title="No drivers in the roster"
+                    description="Add drivers so you can assign them to generated routes."
+                    action={
+                      <Button type="button" variant="primary" className="min-h-11" onClick={() => setShowAddDriver(true)}>
+                        Add driver
+                      </Button>
+                    }
+                  />
+                ) : (
                 <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto pr-1 scrollbar-thin">
                   {drivers.map(driver => (
                     <DriverCard key={driver.id} driver={driver} />
                   ))}
                 </div>
+                )}
                 {showAddDriver && (
                   <div className="mt-4 space-y-3 rounded-xl border border-blue-500/25 bg-gradient-to-br from-blue-500/5 to-blue-600/5 p-4">
                     <h3 className="text-sm font-medium text-blue-400">New driver</h3>
@@ -629,7 +657,7 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                       <input className={inputCls} type="number" placeholder="Vehicle capacity" value={newDriver.vehicleCapacity} onChange={e => setNewDriver(p => ({ ...p, vehicleCapacity: e.target.value }))} disabled={saving} />
                       <input className={inputCls} placeholder="License plate" value={newDriver.licensePlate} onChange={e => setNewDriver(p => ({ ...p, licensePlate: e.target.value }))} disabled={saving} />
                     </div>
-                    <SlideButton
+                    <SlideToConfirm
                       label={saving ? 'Adding…' : 'Slide to add driver'}
                       onConfirm={handleAddDriver}
                       loading={saving}
@@ -648,13 +676,13 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                   <div className="flex items-center justify-between py-1">
                     <span className="text-sm text-gray-300">WooCommerce</span>
                     <Toggle
-                      isOn={settings.woocommerce_integration_enabled || false}
+                      checked={settings.woocommerce_integration_enabled || false}
                       onChange={v => handleSettingChange('woocommerce_integration_enabled', v)}
                       disabled={saving}
                     />
                   </div>
                   {settings.woocommerce_integration_enabled && (
-                    <div className="space-y-3 rounded-xl border border-[#1a2a45] bg-[#0a0e1a] p-4">
+                    <div className="space-y-3 rounded-card border border-white/10 bg-xr-bg/60 p-4">
                       <input
                         className={inputCls}
                         type="url"
@@ -675,26 +703,25 @@ const MyAdmin = ({ onNavigateToDashboard }) => {
                   )}
                   <div className="flex items-center justify-between border-t border-white/5 pt-2">
                     <span className="text-sm text-gray-300">Real-time tracking</span>
-                    <Toggle isOn={settings.enable_real_time_tracking || false} onChange={v => handleSettingChange('enable_real_time_tracking', v)} disabled={saving} />
+                    <Toggle checked={settings.enable_real_time_tracking || false} onChange={v => handleSettingChange('enable_real_time_tracking', v)} disabled={saving} />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-300">Customer notifications</span>
                     <Toggle
-                      isOn={settings.customer_notifications !== false}
+                      checked={settings.customer_notifications !== false}
                       onChange={v => handleSettingChange('customer_notifications', v)}
                       disabled={saving}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-300">Driver mobile app</span>
-                    <Toggle isOn={settings.driver_app_enabled !== false} onChange={v => handleSettingChange('driver_app_enabled', v)} disabled={saving} />
+                    <Toggle checked={settings.driver_app_enabled !== false} onChange={v => handleSettingChange('driver_app_enabled', v)} disabled={saving} />
                   </div>
                 </div>
               </SectionCard>
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

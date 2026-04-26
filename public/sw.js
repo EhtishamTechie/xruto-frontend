@@ -1,6 +1,6 @@
 const CACHE_NAME = 'xruto-v1.0.0';
 const STATIC_CACHE_NAME = 'xruto-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'xruto-dynamic-v1.0.0';
+const DYNAMIC_CACHE_NAME = 'xruto-dynamic-v2.1-orders-uncached';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
@@ -105,17 +105,23 @@ self.addEventListener('fetch', event => {
 // Network-first strategy for API requests (with offline fallback)
 async function handleApiRequest(request) {
   const url = new URL(request.url);
-  
+
+  // Never cache heavy or highly dynamic order/route payloads. Caching them caused the app to
+  // freeze (CacheStorage + Response.clone() on multi‑MB JSON blocks the browser hard).
+  const skipApiCache =
+    url.pathname.includes('/orders/') ||
+    url.pathname.includes('/sync') ||
+    url.pathname.includes('/delivery-status');
+
   try {
     // Try network first
     const response = await fetch(request);
-    
-    if (response.ok) {
-      // Cache successful API responses
+
+    if (response.ok && !skipApiCache) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, response.clone());
     }
-    
+
     return response;
   } catch (error) {
     console.log('[SW] API request failed, checking cache:', url.pathname);

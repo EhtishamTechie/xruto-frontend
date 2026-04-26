@@ -7,13 +7,19 @@
     font-family: theme(fontFamily.sans);
   }
   body {
-    @apply bg-xr-bg text-white;
+    @apply bg-xr-bg text-body text-xr-text antialiased;
+    /* Premium SaaS dark background (subtle, not glossy) */
+    background:
+      radial-gradient(1200px 600px at 18% 12%, rgba(245,158,11,0.10), transparent 60%),
+      radial-gradient(900px 520px at 82% 14%, rgba(96,165,250,0.09), transparent 62%),
+      linear-gradient(180deg, theme(colors.xr.bg), #070A10 60%, theme(colors.xr.bg));
+    background-attachment: fixed;
   }
   h1, h2, h3, h4 {
     font-family: theme(fontFamily.heading);
   }
   :focus-visible {
-    outline: 2px solid theme(colors.xr.amber);
+    outline: 2px solid theme(colors.xr.brand);
     outline-offset: 2px;
   }
 }
@@ -21,20 +27,44 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(26 42 69) transparent;
+    scrollbar-color: theme(colors.xr.line) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
     height: 6px;
     width: 6px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-[#1a2a45];
+    @apply rounded-full bg-xr-line;
   }
 
   .glass-card {
-    background: linear-gradient(180deg, rgba(28,35,51,0.72), rgba(13,19,32,0.9));
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    /* Subtle depth (avoid glossy) */
+    background:
+      linear-gradient(180deg, rgba(17,24,39,0.78), rgba(15,23,42,0.92));
+    border: 1px solid theme(colors.xr.border);
+    box-shadow: theme(boxShadow.panel);
     backdrop-filter: blur(12px);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Subtle grid pattern – makes the UI feel “designed” immediately */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(circle at 35% 18%, black 0%, transparent 62%);
+  }
+
+  /* Subtle noise texture (difference maker) */
+  .bg-noise {
+    background-image:
+      repeating-radial-gradient(circle at 0 0, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px);
+    background-size: 140px 140px;
+    opacity: 0.55;
+    mix-blend-mode: overlay;
   }
 }

@@ -9,8 +9,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          api: ['axios'] // If you add axios later
-        }
+        },
       }
     }
   },
