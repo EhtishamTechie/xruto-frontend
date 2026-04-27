@@ -182,6 +182,194 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
 };
 
 const inputCls = 'w-full bg-xr-bg border border-xr-line rounded-xl px-4 py-3 text-white text-sm placeholder-xr-subtle focus:outline-none focus:border-xr-brand/50 transition';
+const depotInputCls = `${inputCls} min-h-[46px] pr-10 text-white focus:border-xr-brand/50`;
+
+/**
+ * Searchable depot field (add + edit driver): type prefix e.g. "F" to jump to the first depot whose
+ * name starts with that letter, click list to pick, or clear for no depot. List is portaled to avoid
+ * clipping in scrollable fleet columns.
+ */
+const DepotCombobox = ({ depots, value, onChange, disabled, noDepotLabel = 'No depot' }) => {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const rootRef = useRef(null);
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
+  const menuPosRef = useRef(null);
+  const [menuPos, setMenuPos] = useState(null);
+
+  const selected = depots.find((d) => String(d.id) === String(value));
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const maxH = Math.max(80, Math.min(260, vh - r.bottom - 16));
+    setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width, maxHeight: maxH });
+    const onScroll = () => {
+      if (!rootRef.current) return;
+      const b = rootRef.current.getBoundingClientRect();
+      setMenuPos((p) => (p ? { ...p, top: b.bottom + 4, left: b.left, width: b.width } : null));
+    };
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [open, text, depots.length]);
+
+  useEffect(() => {
+    if (open) return;
+    setText(selected ? (selected.name || 'Depot') : '');
+  }, [value, depots, selected, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (rootRef.current?.contains(e.target) || listRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const runPrefixMatch = (raw) => {
+    const t = String(raw).trim();
+    if (!t) {
+      onChange('');
+      return;
+    }
+    const pre = t.toLowerCase();
+    const hit = depots.find((d) => (d.name || '').toLowerCase().startsWith(pre));
+    if (hit) {
+      onChange(String(hit.id));
+      setText(hit.name || 'Depot');
+    }
+  };
+
+  const filtered = (() => {
+    const s = text.trim().toLowerCase();
+    if (!s) return depots;
+    return depots.filter((d) => (d.name || '').toLowerCase().includes(s));
+  })();
+
+  const listEl =
+    open &&
+    !disabled &&
+    menuPos &&
+    createPortal(
+      <ul
+        ref={listRef}
+        role="listbox"
+        className="overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl ring-1 ring-black/40"
+        style={{
+          position: 'fixed',
+          zIndex: 20000,
+          top: menuPos.top,
+          left: menuPos.left,
+          width: menuPos.width,
+          maxHeight: menuPos.maxHeight,
+        }}
+      >
+        <li
+          role="option"
+          className="cursor-pointer px-4 py-2.5 text-left text-sm text-xr-muted transition hover:bg-xr-surface"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            onChange('');
+            setText('');
+            setOpen(false);
+          }}
+        >
+          {noDepotLabel}
+        </li>
+        {filtered.map((d) => (
+          <li
+            key={String(d.id)}
+            role="option"
+            className={`cursor-pointer px-4 py-2.5 text-left text-sm text-white transition hover:bg-xr-surface ${
+              String(value) === String(d.id) ? 'bg-xr-surface/80' : ''
+            }`}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onChange(String(d.id));
+              setText(d.name || 'Depot');
+              setOpen(false);
+            }}
+          >
+            {d.name || 'Depot'}
+          </li>
+        ))}
+      </ul>,
+      document.body
+    );
+
+  return (
+    <div ref={rootRef} className="relative w-full min-w-0">
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          className={depotInputCls}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          disabled={disabled}
+          placeholder={noDepotLabel}
+          value={text}
+          aria-label="Depot"
+          role="combobox"
+          aria-expanded={open}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setText(v);
+            if (!v.trim()) {
+              onChange('');
+              return;
+            }
+            runPrefixMatch(v);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              setOpen(false);
+            }
+            if (e.key === 'Enter' && open && filtered.length) {
+              const d = filtered[0];
+              onChange(String(d.id));
+              setText(d.name || 'Depot');
+              setOpen(false);
+              e.preventDefault();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-gray-500"
+          tabIndex={-1}
+          disabled={disabled}
+          onClick={() => {
+            if (disabled) return;
+            setOpen((o) => !o);
+            inputRef.current?.focus();
+          }}
+          aria-label="Toggle depot list"
+        >
+          <Ico d={ICON.chevDown} className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      <p className="mt-1 text-[10px] text-xr-subtle sm:text-[11px]">Type the first letter(s) to jump to a depot, or use the list</p>
+      {listEl}
+    </div>
+  );
+};
 
 const SectionCard = ({ title, subtitle, children, className = '' }) => (
   <Card variant="glass" className={`p-5 sm:p-6 ${className}`}>
@@ -440,8 +628,17 @@ const MyAdmin = ({ onNavigateToOrders }) => {
         <input className={inputCls} type="email" placeholder="Email" value={editDriverData.email || ''} onChange={e => setEditDriverData(p => ({ ...p, email: e.target.value }))} />
         <input className={inputCls} placeholder="Phone" value={editDriverData.phone || ''} onChange={e => setEditDriverData(p => ({ ...p, phone: e.target.value }))} />
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <Dropdown value={editDriverData.depotId || ''} options={[{ value: '', label: 'No Depot' }, ...depots.map(d => ({ value: d.id, label: d.name }))]} onChange={v => setEditDriverData(p => ({ ...p, depotId: v }))} placeholder="Depot" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="min-w-0 sm:col-span-1">
+          <label className="mb-1 block text-[11px] font-medium text-xr-muted">Depot</label>
+          <DepotCombobox
+            depots={depots}
+            value={editDriverData.depotId}
+            onChange={(id) => setEditDriverData((p) => ({ ...p, depotId: id }))}
+            disabled={saving}
+            noDepotLabel="No depot"
+          />
+        </div>
         <input className={inputCls} type="number" placeholder="MPG" value={editDriverData.mpg || ''} onChange={e => setEditDriverData(p => ({ ...p, mpg: e.target.value }))} />
         <input className={inputCls} placeholder="License Plate" value={editDriverData.licensePlate || ''} onChange={e => setEditDriverData(p => ({ ...p, licensePlate: e.target.value }))} />
       </div>
@@ -850,14 +1047,20 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                       <input className={inputCls} type="password" placeholder="Password" value={newDriver.password} onChange={e => setNewDriver(p => ({ ...p, password: e.target.value }))} disabled={saving} />
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <input className={inputCls} placeholder="Phone" value={newDriver.phone} onChange={e => setNewDriver(p => ({ ...p, phone: e.target.value }))} disabled={saving} />
-                      <Dropdown
-                        value={newDriver.depotId}
-                        options={[{ value: '', label: 'No depot' }, ...depots.map(d => ({ value: d.id, label: d.name }))]}
-                        onChange={v => setNewDriver(p => ({ ...p, depotId: v }))}
-                        placeholder="Select depot"
-                        disabled={saving}
-                      />
+                      <div className="min-w-0">
+                        <label className="mb-1 block text-[11px] font-medium text-xr-muted">Phone</label>
+                        <input className={inputCls} placeholder="Phone" value={newDriver.phone} onChange={e => setNewDriver(p => ({ ...p, phone: e.target.value }))} disabled={saving} />
+                      </div>
+                      <div className="min-w-0">
+                        <label className="mb-1 block text-[11px] font-medium text-xr-muted">Depot</label>
+                        <DepotCombobox
+                          depots={depots}
+                          value={newDriver.depotId}
+                          onChange={(id) => setNewDriver((p) => ({ ...p, depotId: id }))}
+                          disabled={saving}
+                          noDepotLabel="No depot"
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <input className={inputCls} type="number" placeholder="MPG" value={newDriver.mpg} onChange={e => setNewDriver(p => ({ ...p, mpg: e.target.value }))} disabled={saving} />
