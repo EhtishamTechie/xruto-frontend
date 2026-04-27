@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { adminAPI } from '../services/api';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -8,6 +9,7 @@ import { SlideToConfirm } from '../ui/SlideToConfirm';
 import { EmptyState } from '../ui/EmptyState';
 import { useToast } from '../ui/ToastContext.jsx';
 import { Settings, Users, MapPinned, Truck, Warehouse, UserCircle2 } from 'lucide-react';
+import { parseLatLngFromGoogleMapsText } from '../utils/googleMapsUrl';
 
 const Ico = ({ d, className = 'w-5 h-5', fill = false }) => (
   <svg className={className} fill={fill ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke={fill ? 'none' : 'currentColor'} strokeWidth={1.8}>
@@ -60,24 +62,94 @@ const Stepper = ({ label, value, onChange, disabled, helpText, min = 1, max = 10
 
 const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
   const [open, setOpen] = useState(false);
-  const selected = options.find(o => o.value === value);
+  const [menuPos, setMenuPos] = useState(null);
+  const rootRef = useRef(null);
+  const portalRef = useRef(null);
+  const selected = options.find((o) => o.value === value);
+
+  const updateMenuPos = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    updateMenuPos();
+    const onScroll = () => updateMenuPos();
+    const onResize = () => updateMenuPos();
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (rootRef.current?.contains(e.target) || portalRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const menu =
+    open &&
+    !disabled &&
+    menuPos &&
+    createPortal(
+      <div
+        ref={portalRef}
+        role="listbox"
+        className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl scrollbar-thin ring-1 ring-black/40"
+        style={{
+          position: 'fixed',
+          top: menuPos.top,
+          left: menuPos.left,
+          width: menuPos.width,
+          zIndex: 9999,
+        }}
+      >
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            role="option"
+            className="flex w-full cursor-pointer px-4 py-2.5 text-left text-sm text-white transition hover:bg-xr-surface"
+            onClick={() => {
+              onChange(opt.value);
+              setOpen(false);
+            }}
+          >
+            {opt.label}
+            {opt.sub && <span className="ml-2 text-xs text-gray-500">{opt.sub}</span>}
+          </button>
+        ))}
+      </div>,
+      document.body
+    );
+
   return (
-    <div className="relative">
-      <div onClick={() => !disabled && setOpen(!open)}
-        className="bg-xr-bg border border-xr-line rounded-xl px-4 py-3 flex justify-between items-center cursor-pointer">
-        <span className="text-sm text-gray-400">{selected?.label || placeholder}</span>
-        <Ico d={ICON.chevDown} className={`w-4 h-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </div>
-      {open && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-xr-panel border border-xr-line rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-          {options.map(opt => (
-            <div key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
-              className="cursor-pointer px-4 py-2.5 text-sm text-white transition hover:bg-xr-elevated">
-              {opt.label}{opt.sub && <span className="text-xs text-gray-500 ml-2">{opt.sub}</span>}
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="relative" ref={rootRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => !disabled && setOpen((v) => !v)}
+        className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-xr-line bg-xr-bg px-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <span className="text-sm text-gray-300">{selected?.label || placeholder}</span>
+        <Ico d={ICON.chevDown} className={`h-4 w-4 shrink-0 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {menu}
     </div>
   );
 };
@@ -109,7 +181,9 @@ const MyAdmin = ({ onNavigateToOrders }) => {
   const [syncFlash, setSyncFlash] = useState(false);
   const [helpEnabled, setHelpEnabled] = useState(true);
   const [showTooltip, setShowTooltip] = useState(null);
-  const [newDepot, setNewDepot] = useState({ name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '' });
+  const [newDepot, setNewDepot] = useState({
+    name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '', latitude: '', longitude: '', googleMapsUrl: '',
+  });
   const [newDriver, setNewDriver] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', depotId: '', mpg: '', vehicleType: 'van', vehicleCapacity: '50', licensePlate: '', workingHours: '{"start": "08:00", "end": "18:00"}', maxRoutesPerDay: '3', notes: '' });
   const [editingDriver, setEditingDriver] = useState(null);
   const [editDriverData, setEditDriverData] = useState({});
@@ -151,17 +225,43 @@ const MyAdmin = ({ onNavigateToOrders }) => {
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
+  const canSaveNewDepot = () => {
+    if (!String(newDepot.name || '').trim()) return false;
+    const a = String(newDepot.address || '').trim();
+    const fromLink = parseLatLngFromGoogleMapsText(newDepot.googleMapsUrl || '');
+    const fromPair =
+      newDepot.latitude !== '' && newDepot.longitude !== ''
+        ? parseLatLngFromGoogleMapsText(`${String(newDepot.latitude).trim()},${String(newDepot.longitude).trim()}`)
+        : null;
+    return !!(a || fromLink || fromPair);
+  };
+
   const handleAddDepot = async () => {
-    if (!newDepot.name || !newDepot.address) { setError('Depot name and address required'); return; }
+    if (!String(newDepot.name || '').trim()) { setError('Depot name is required'); return; }
+    if (!canSaveNewDepot()) { setError('Add a street address, or paste a Google Maps link, or enter latitude and longitude.'); return; }
     try { setSaving(true); await adminAPI.addDepot(newDepot);
-      setNewDepot({ name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '' });
+      setNewDepot({ name: '', address: '', city: '', postcode: '', capacity: '', contactPhone: '', contactEmail: '', latitude: '', longitude: '', googleMapsUrl: '' });
       setShowAddDepot(false); await loadAdminData(); toast.success('Depot added'); setSyncFlash(true);
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
   const handleEditDepot = (depot) => {
     setEditingDepot(depot.id);
-    setEditDepotData({ name: depot.name || '', address: depot.address || '', city: depot.city || '', postcode: depot.postcode || '', capacity: depot.capacity || '', contactPhone: depot.contact_phone || '', contactEmail: depot.contact_email || '' });
+    const la = parseFloat(depot.latitude);
+    const lo = parseFloat(depot.longitude);
+    const isNullIsland = Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) < 1e-9 && Math.abs(lo) < 1e-9;
+    setEditDepotData({
+      name: depot.name || '',
+      address: depot.address || '',
+      city: depot.city || '',
+      postcode: depot.postcode || '',
+      capacity: depot.capacity || '',
+      contactPhone: depot.contact_phone || '',
+      contactEmail: depot.contact_email || '',
+      latitude: !isNullIsland && depot.latitude != null && depot.latitude !== '' ? String(depot.latitude) : '',
+      longitude: !isNullIsland && depot.longitude != null && depot.longitude !== '' ? String(depot.longitude) : '',
+      googleMapsUrl: '',
+    });
   };
 
   const handleSaveDepotEdit = async () => {
@@ -202,6 +302,33 @@ const MyAdmin = ({ onNavigateToOrders }) => {
     } catch (e) { setError('Failed: ' + e.message); } finally { setSaving(false); }
   };
 
+  /** Classic UK demo pin from templates (Warrington area). If your depot name/address is not UK, replace coords. */
+  const depotCoordsLine = (depot) => {
+    const lat = parseFloat(depot.latitude);
+    const lng = parseFloat(depot.longitude);
+    const usable = Number.isFinite(lat) && Number.isFinite(lng) && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
+    const looksUkTemplate =
+      usable &&
+      Math.abs(lat - 53.3808256) < 0.002 &&
+      Math.abs(lng - (-2.575416)) < 0.002;
+    const textBlob = `${depot.name || ''} ${depot.address || ''} ${depot.city || ''}`.toLowerCase();
+    const looksNonUkDepot = /pakistan|taxila|lahore|islamabad|karachi|pk\b/.test(textBlob) &&
+      !/warrington|latchford|united kingdom|england| wa[0-9]{1,2}\b/i.test(textBlob);
+    if (usable) {
+      return (
+        <div className="mt-1 space-y-1">
+          <p className="text-[10px] font-mono text-xr-subtle">Map: {lat.toFixed(5)}, {lng.toFixed(5)}</p>
+          {looksUkTemplate && looksNonUkDepot && (
+            <p className="text-[10px] text-amber-200/95">
+              These coordinates are the UK demo location (Warrington). Open Google Maps, find your depot, paste the correct lat/lng here, and Save — otherwise routes will start/end in the UK.
+            </p>
+          )}
+        </div>
+      );
+    }
+    return <p className="mt-1 text-[10px] text-amber-300/90">No valid map pin — edit, confirm address or paste lat/lng, then Save.</p>;
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center py-20">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-xr-brand/30 border-t-xr-brand" />
@@ -226,6 +353,31 @@ const MyAdmin = ({ onNavigateToOrders }) => {
         <input className={inputCls} type="number" placeholder="Capacity" value={editDepotData.capacity || ''} onChange={e => setEditDepotData(p => ({ ...p, capacity: e.target.value }))} />
         <input className={inputCls} placeholder="Phone" value={editDepotData.contactPhone || ''} onChange={e => setEditDepotData(p => ({ ...p, contactPhone: e.target.value }))} />
       </div>
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-medium text-xr-muted">Google Maps link</p>
+        <input
+          className={inputCls}
+          placeholder="Paste Share link to fill coordinates…"
+          value={editDepotData.googleMapsUrl ?? ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            setEditDepotData((p) => {
+              const n = { ...p, googleMapsUrl: v };
+              const found = parseLatLngFromGoogleMapsText(v);
+              if (found) {
+                n.latitude = String(found.latitude);
+                n.longitude = String(found.longitude);
+              }
+              return n;
+            });
+          }}
+        />
+      </div>
+      <p className="text-[11px] text-xr-muted">Or re-geocode from the address, or set latitude / longitude manually.</p>
+      <div className="grid grid-cols-2 gap-3">
+        <input className={inputCls} type="text" inputMode="decimal" placeholder="Latitude" value={editDepotData.latitude ?? ''} onChange={e => setEditDepotData(p => ({ ...p, latitude: e.target.value }))} />
+        <input className={inputCls} type="text" inputMode="decimal" placeholder="Longitude" value={editDepotData.longitude ?? ''} onChange={e => setEditDepotData(p => ({ ...p, longitude: e.target.value }))} />
+      </div>
     </div>
   ) : (
     <div className="flex items-start justify-between rounded-card border border-white/10 bg-xr-bg/70 p-4">
@@ -236,6 +388,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
         </div>
         <p className="text-xs text-xr-muted">{depot.address}</p>
         <p className="mt-1 text-xs text-xr-subtle">{depot.driver_count || 0} drivers &middot; Cap: {depot.capacity || 'N/A'}</p>
+        {depotCoordsLine(depot)}
       </div>
       <div className="flex gap-2">
         <button onClick={() => handleEditDepot(depot)} className="text-blue-400 hover:text-blue-300 p-1"><Ico d={ICON.edit} className="w-4 h-4" /></button>
@@ -592,7 +745,34 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                       <input className={inputCls} placeholder="Phone" value={newDepot.contactPhone} onChange={e => setNewDepot(p => ({ ...p, contactPhone: e.target.value }))} disabled={saving} />
                     </div>
                     <input className={inputCls} type="email" placeholder="Contact email" value={newDepot.contactEmail} onChange={e => setNewDepot(p => ({ ...p, contactEmail: e.target.value }))} disabled={saving} />
-                    <SlideToConfirm label={saving ? 'Adding…' : 'Slide to add depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !newDepot.address} />
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-medium text-xr-muted">Google Maps link (recommended)</p>
+                      <p className="text-[10px] text-xr-subtle">In Google Maps: open your place → Share → copy link, paste here. We read coordinates from the link (e.g. …/@33.76,72.82,… ).</p>
+                      <input
+                        className={inputCls}
+                        placeholder="https://www.google.com/maps/place/.../@33.76,72.82,17z/..."
+                        value={newDepot.googleMapsUrl ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setNewDepot((p) => {
+                            const n = { ...p, googleMapsUrl: v };
+                            const found = parseLatLngFromGoogleMapsText(v);
+                            if (found) {
+                              n.latitude = String(found.latitude);
+                              n.longitude = String(found.longitude);
+                            }
+                            return n;
+                          });
+                        }}
+                        disabled={saving}
+                      />
+                    </div>
+                    <p className="text-[11px] text-xr-muted">Or: we try to look up your address (works best with country). You can also type latitude and longitude, or two numbers like 33.76, 72.82 below.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input className={inputCls} type="text" inputMode="decimal" placeholder="Latitude" value={newDepot.latitude ?? ''} onChange={e => setNewDepot(p => ({ ...p, latitude: e.target.value }))} disabled={saving} />
+                      <input className={inputCls} type="text" inputMode="decimal" placeholder="Longitude" value={newDepot.longitude ?? ''} onChange={e => setNewDepot(p => ({ ...p, longitude: e.target.value }))} disabled={saving} />
+                    </div>
+                    <SlideToConfirm label={saving ? 'Adding…' : 'Slide to add depot'} onConfirm={handleAddDepot} loading={saving} disabled={!newDepot.name || !canSaveNewDepot()} />
                   </div>
                 )}
               </SectionCard>

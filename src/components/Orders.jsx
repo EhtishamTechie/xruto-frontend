@@ -69,7 +69,12 @@ const ordersAPI = {
     const r = await fetch(`${API_BASE_URL}/orders/reset`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
     if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.message || `HTTP ${r.status}`); }
     return r.json();
-  }
+  },
+  getRoutes: async (date) => {
+    const r = await fetch(`${API_BASE_URL}/orders/get-routes?date=${encodeURIComponent(date)}`);
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.message || `HTTP ${r.status}`); }
+    return r.json();
+  },
 };
 
 const ZONE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444'];
@@ -140,6 +145,35 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
   const [demoSet, setDemoSet] = useState(null);
 
   useEffect(() => { loadInitialData(); }, []);
+
+  // Keep map links in sync with server (driver’s depot, not just primary) when opening Review
+  useEffect(() => {
+    if (activeTab !== 2) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const date = new Date().toISOString().split('T')[0];
+        const j = await ordersAPI.getRoutes(date);
+        if (cancelled || !j?.success || !j.routes?.length) return;
+        setGeneratedRoutes((prev) => {
+          if (!prev.length) return prev;
+          const byId = new Map(j.routes.map((x) => [x.route_id, x]));
+          return prev.map((rt) => {
+            const srv = byId.get(rt.route_id);
+            if (!srv) return rt;
+            return {
+              ...rt,
+              navigation_url: srv.navigation_url != null && srv.navigation_url !== '' ? srv.navigation_url : rt.navigation_url,
+              driver_id: srv.driver_id ?? rt.driver_id,
+              driver_name: srv.driver_name ?? rt.driver_name,
+              status: srv.status ?? rt.status,
+            };
+          });
+        });
+      } catch { /* keep local state */ }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -218,7 +252,14 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
     try {
       const r = await ordersAPI.assignDriver(routeId, driverId);
       if (r.success) {
-        setGeneratedRoutes(prev => prev.map(rt => rt.route_id === routeId ? { ...rt, driver_id: driverId, driver_name: r.driver.name, status: 'assigned' } : rt));
+        const nav = r.navigation_url || r.route?.navigation_url;
+        setGeneratedRoutes(prev => prev.map(rt => rt.route_id === routeId ? {
+          ...rt,
+          driver_id: driverId,
+          driver_name: r.driver.name,
+          status: 'assigned',
+          ...(nav ? { navigation_url: nav } : {}),
+        } : rt));
         setSuccess('Driver assigned');
       } else throw new Error(r.message);
     } catch (e) { setError(e.message); }
