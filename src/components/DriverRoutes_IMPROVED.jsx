@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Page, PageHeader } from '../ui/Page';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { SlideToConfirm } from '../ui/SlideToConfirm';
 import { useToast } from '../ui/ToastContext.jsx';
 import { EmptyState } from '../ui/EmptyState';
 import { Route } from 'lucide-react';
@@ -48,18 +47,23 @@ const fmtDist = (km) => { if (!km) return '0 km'; return km < 1 ? `${Math.round(
 const ZONE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 // Zone Card — single accent (brand) for a calmer, consistent look
+const orderIsDelivered = (o) =>
+  o?.status === 'delivered' || o?.delivery_status === 'delivered';
+
 const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
   const [expanded, setExpanded] = useState(false);
-  const allOrders = route.route_segments?.flatMap(s => s.orders || []) || [];
-  const completed = allOrders.filter(o => o.status === 'delivered').length;
-  const failed = allOrders.filter(o => o.status === 'failed').length;
-  const total = route.total_orders || allOrders.length;
+  const allOrders = route.route_segments?.flatMap((s) => s.orders || []) || [];
+  const completed = allOrders.filter(orderIsDelivered).length;
+  const failed = allOrders.filter((o) => o.status === 'failed' || o.delivery_status === 'failed').length;
+  const total = allOrders.length || route.total_orders || 0;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const zoneLetter = ZONE_LABELS[index % ZONE_LABELS.length];
 
-  const isCompleted = pct === 100 || route.status === 'completed';
-  const isInProgress = (route.status === 'in_progress' || route.status === 'in_route' || route.status === 'dispatched') && !isCompleted;
-  const isNotStarted = !isCompleted && !isInProgress;
+  // API often sends route.status "assigned" / "generated" / "dispatched" while stops are still open; drive UI
+  // from per-order delivery status.
+  const isCompleted = pct === 100 || String(route.status) === 'completed';
+  const inProgressByApi = ['in_progress', 'in_route'].includes(String(route.status || ''));
+  const isInProgress = !isCompleted && (pct > 0 || inProgressByApi);
 
   const statusLabel = isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started';
   const statusColor = isCompleted ? 'text-emerald-300 bg-xr-success/15' : isInProgress ? 'text-amber-200 bg-xr-brand/15' : 'text-red-300 bg-xr-danger/15';
@@ -133,7 +137,7 @@ const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
       {expanded && (
         <div className="border-t border-xr-line bg-xr-surface p-4 space-y-2">
           {allOrders.map((order, idx) => {
-            const isDone = order.status === 'delivered' || order.status === 'failed';
+            const isDone = orderIsDelivered(order) || order.status === 'failed' || order.delivery_status === 'failed';
             return (
               <div key={order.id || idx} className={`flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-xr-panel/60' : 'bg-xr-panel'} border border-xr-line`}>
                 <div
@@ -174,21 +178,16 @@ const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
         </div>
       )}
 
-      {/* Slide to confirm */}
-      <div className="p-4 pt-0">
-        {isCompleted ? (
-          <div className="flex items-center justify-center gap-2 py-3 text-sm font-medium text-emerald-300/90">
+      {isCompleted && (
+        <div className="border-t border-xr-line/80 px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-300/90">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Route completed
           </div>
-        ) : isInProgress ? (
-          <SlideToConfirm label="Slide to complete route" onConfirm={() => {}} />
-        ) : (
-          <SlideToConfirm label="Slide to start route" onConfirm={() => onNavigate(route)} />
-        )}
-      </div>
+        </div>
+      )}
     </Card>
   );
 };
@@ -279,12 +278,29 @@ const DriverRoutes = () => {
   const updateStatus = async (orderId, newStatus) => {
     try {
       await driverAPI.updateDeliveryStatus(orderId, newStatus);
-      setRoutes(prev => prev.map(route => ({
-        ...route,
-        route_segments: route.route_segments?.map(seg => ({
-          ...seg, orders: seg.orders?.map(o => o.id === orderId ? { ...o, status: newStatus } : o) || []
-        }))
-      })));
+      setRoutes((prev) =>
+        prev.map((route) => {
+          const routeSegments = route.route_segments?.map((seg) => ({
+            ...seg,
+            orders:
+              seg.orders?.map((o) =>
+                String(o.id) === String(orderId)
+                  ? { ...o, status: newStatus, delivery_status: newStatus }
+                  : o
+              ) || [],
+          }));
+          const flat = routeSegments?.flatMap((s) => s.orders || []) || [];
+          const done = flat.filter(orderIsDelivered).length;
+          const tot = flat.length || route.total_orders || 0;
+          const nextCompleted = tot > 0 ? Math.round((done / tot) * 100) === 100 : false;
+          return {
+            ...route,
+            route_segments: routeSegments,
+            completed_orders: done,
+            status: nextCompleted ? 'completed' : route.status,
+          };
+        })
+      );
       toast.success(newStatus === 'delivered' ? 'Marked delivered' : 'Status updated');
     } catch (e) {
       toast.error(e.message || 'Could not update status');
@@ -293,7 +309,7 @@ const DriverRoutes = () => {
 
   const totalOrders = routes.reduce((s, r) => s + (r.total_orders || 0), 0);
   const completedOrders = routes.reduce((s, r) => {
-    return s + (r.route_segments?.flatMap(seg => seg.orders || []) || []).filter(o => o.status === 'delivered').length;
+    return s + (r.route_segments?.flatMap((seg) => seg.orders || []) || []).filter(orderIsDelivered).length;
   }, 0);
   const overallPct = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
 

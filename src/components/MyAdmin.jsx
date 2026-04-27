@@ -60,6 +60,9 @@ const Stepper = ({ label, value, onChange, disabled, helpText, min = 1, max = 10
   </div>
 );
 
+const DROPDOWN_MAX_H = 280;
+const BOTTOM_CHROME = 80; // mobile tab bar + padding (see AppShell fixed nav)
+
 const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
@@ -71,7 +74,23 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
     const el = rootRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    const vh = window.innerHeight;
+    let safe = 0;
+    try {
+      const sb = getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-bottom)').trim();
+      if (sb) {
+        const n = parseFloat(sb);
+        if (!Number.isNaN(n)) safe = n;
+      }
+    } catch { /* ignore */ }
+    const mobile = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+    const reserveBottom = (mobile ? BOTTOM_CHROME : 12) + safe;
+    const gap = 4;
+    // Always anchor the list directly under the trigger (native-select behavior). Avoid “flip up”
+    // with a tall panel — it used to sit in the middle of the form and look detached.
+    const availableBelow = Math.max(0, vh - r.bottom - gap - reserveBottom);
+    const maxHeight = Math.min(DROPDOWN_MAX_H, availableBelow) || 32;
+    setMenuPos({ top: r.bottom + gap, left: r.left, width: r.width, maxHeight });
   };
 
   useLayoutEffect(() => {
@@ -97,7 +116,11 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
       setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    document.addEventListener('touchstart', onDoc, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('touchstart', onDoc);
+    };
   }, [open]);
 
   const menu =
@@ -108,14 +131,18 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
       <div
         ref={portalRef}
         role="listbox"
-        className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl scrollbar-thin ring-1 ring-black/40"
+        className="overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl scrollbar-thin ring-1 ring-black/40 touch-pan-y"
         style={{
           position: 'fixed',
           top: menuPos.top,
           left: menuPos.left,
           width: menuPos.width,
-          zIndex: 9999,
+          maxHeight: menuPos.maxHeight,
+          zIndex: 20000,
         }}
+        onWheel={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         {options.map((opt) => (
           <button
@@ -424,7 +451,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       <div>
         <span className="text-sm font-medium text-white">{driver.name || `${driver.first_name || ''} ${driver.last_name || ''}`}</span>
         <p className="mt-0.5 text-xs text-xr-muted">{driver.email}</p>
-        <p className="mt-0.5 text-xs text-xr-subtle">{driver.details || ''} {driver.mpg ? `| ${driver.mpg} MPG` : ''}</p>
+        <p className="mt-0.5 text-xs text-xr-subtle">{String(driver.details || '').trim() || (driver.depot_name ? `${driver.depot_name} · ${driver.mpg || 30} MPG` : '—')}</p>
       </div>
       <div className="flex gap-2">
         <button onClick={() => handleEditDriver(driver)} className="text-blue-400 hover:text-blue-300 p-1"><Ico d={ICON.edit} className="w-4 h-4" /></button>

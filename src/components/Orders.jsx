@@ -80,6 +80,14 @@ const ordersAPI = {
 const ZONE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444'];
 const fmtDur = m => { if (!m) return '0 min'; if (m < 60) return `${Math.round(m)} min`; return `${Math.floor(m/60)}h ${Math.round(m%60)}m`; };
 
+/** Label for which depot the map URL uses: driver depot once assigned, else zone preview depot from generate-routes. */
+const mapStartDepotLabel = (route) => {
+  if (route?.driver_id && route?.maps_depot_name) return route.maps_depot_name;
+  if (route?.depot_start_name) return route.depot_start_name;
+  if (route?.maps_depot_name) return route.maps_depot_name;
+  return null;
+};
+
 const SummaryTile = ({ label, value, tone = 'neutral' }) => {
   const toneCls =
     tone === 'brand' ? 'text-amber-200' :
@@ -167,6 +175,7 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
               driver_id: srv.driver_id ?? rt.driver_id,
               driver_name: srv.driver_name ?? rt.driver_name,
               status: srv.status ?? rt.status,
+              maps_depot_name: srv.maps_depot_name ?? rt.maps_depot_name,
             };
           });
         });
@@ -253,12 +262,14 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
       const r = await ordersAPI.assignDriver(routeId, driverId);
       if (r.success) {
         const nav = r.navigation_url || r.route?.navigation_url;
+        const mdn = r.maps_depot_name ?? r.route?.maps_depot_name;
         setGeneratedRoutes(prev => prev.map(rt => rt.route_id === routeId ? {
           ...rt,
           driver_id: driverId,
           driver_name: r.driver.name,
           status: 'assigned',
           ...(nav ? { navigation_url: nav } : {}),
+          ...(mdn != null && mdn !== '' ? { maps_depot_name: mdn } : {}),
         } : rt));
         setSuccess('Driver assigned');
       } else throw new Error(r.message);
@@ -809,6 +820,11 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
 
                           <div className="mt-3 text-xs text-gray-500">
                             Driver: <span className="text-gray-300">{route.driver_name || 'Unassigned'}</span>
+                            {mapStartDepotLabel(route) && (
+                              <span className="mt-0.5 block text-[11px] text-xr-muted">
+                                Map: {mapStartDepotLabel(route)}
+                              </span>
+                            )}
                           </div>
                         </button>
                       );
@@ -847,6 +863,13 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
                         ))}
                       </select>
                     </div>
+
+                    {mapStartDepotLabel(selectedRoute) && (
+                      <p className="text-[11px] text-xr-muted">
+                        {selectedRoute.driver_id ? 'Map start (driver depot)' : 'Map preview (zone depot)'}:{' '}
+                        <span className="text-gray-400">{mapStartDepotLabel(selectedRoute)}</span>
+                      </p>
+                    )}
 
                     {selectedRoute.navigation_url && (
                       <a
@@ -907,6 +930,9 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
                                 <p className="truncate text-sm font-semibold text-white">{route.route_name}</p>
                               </div>
                               <p className="mt-1 text-xs text-gray-500">Driver: <span className="text-gray-300">{route.driver_name || 'N/A'}</span> · {route.total_orders} stops</p>
+                              {mapStartDepotLabel(route) && (
+                                <p className="mt-0.5 text-[11px] text-xr-muted">Map: {mapStartDepotLabel(route)}</p>
+                              )}
                             </div>
                             <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${statusTone}`}>
                               {route.status || 'ready'}
