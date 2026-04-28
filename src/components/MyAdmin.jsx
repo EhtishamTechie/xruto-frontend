@@ -572,21 +572,32 @@ const MyAdmin = ({ onNavigateToOrders }) => {
         <p className="text-[11px] font-medium text-xr-muted">Google Maps link</p>
         <input
           className={inputCls}
-          placeholder="Paste Share link to fill coordinates…"
+          placeholder="Paste address-bar URL to fill coordinates…"
           value={editDepotData.googleMapsUrl ?? ''}
           onChange={(e) => {
             const v = e.target.value;
             setEditDepotData((p) => {
               const n = { ...p, googleMapsUrl: v };
               const found = parseLatLngFromGoogleMapsText(v);
-              if (found) {
+              if (found && !found.isShortUrl) {
                 n.latitude = String(found.latitude);
                 n.longitude = String(found.longitude);
+              } else if (found?.isShortUrl || (v && !found)) {
+                n.latitude = '';
+                n.longitude = '';
               }
               return n;
             });
           }}
         />
+        {editDepotData.googleMapsUrl && parseLatLngFromGoogleMapsText(editDepotData.googleMapsUrl)?.isShortUrl && (
+          <p className="text-[10px] text-amber-300">
+            ⚠ Short link detected — open it in browser, then copy the full URL from the address bar.
+          </p>
+        )}
+        {editDepotData.latitude && editDepotData.longitude && (
+          <p className="text-[10px] text-green-400 font-mono">✓ Coordinates: {editDepotData.latitude}, {editDepotData.longitude}</p>
+        )}
       </div>
       <p className="text-[11px] text-xr-muted">Or re-geocode from the address, or set latitude / longitude manually.</p>
       <div className="grid grid-cols-2 gap-3">
@@ -971,7 +982,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                     <input className={inputCls} type="email" placeholder="Contact email" value={newDepot.contactEmail} onChange={e => setNewDepot(p => ({ ...p, contactEmail: e.target.value }))} disabled={saving} />
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-medium text-xr-muted">Google Maps link (recommended)</p>
-                      <p className="text-[10px] text-xr-subtle">In Google Maps: open your place → Share → copy link, paste here. We read coordinates from the link (e.g. …/@33.76,72.82,… ).</p>
+                      <p className="text-[10px] text-xr-subtle">In Google Maps: search for your place → copy the URL from the browser address bar (not the Share short link). The URL must contain coordinates like <span className="font-mono">…/@33.76,72.82,17z/…</span></p>
                       <input
                         className={inputCls}
                         placeholder="https://www.google.com/maps/place/.../@33.76,72.82,17z/..."
@@ -981,15 +992,34 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                           setNewDepot((p) => {
                             const n = { ...p, googleMapsUrl: v };
                             const found = parseLatLngFromGoogleMapsText(v);
-                            if (found) {
+                            if (found && !found.isShortUrl) {
                               n.latitude = String(found.latitude);
                               n.longitude = String(found.longitude);
+                            } else {
+                              // Don't carry over stale coords from a previous paste
+                              if (found?.isShortUrl || (v && !found)) {
+                                n.latitude = '';
+                                n.longitude = '';
+                              }
                             }
                             return n;
                           });
                         }}
                         disabled={saving}
                       />
+                      {newDepot.googleMapsUrl && parseLatLngFromGoogleMapsText(newDepot.googleMapsUrl)?.isShortUrl && (
+                        <p className="text-[10px] text-amber-300">
+                          ⚠ This is a short link (maps.app.goo.gl). Short links don't contain coordinates. Open the link in your browser, then copy the full URL from the address bar and paste it here.
+                        </p>
+                      )}
+                      {newDepot.googleMapsUrl && !parseLatLngFromGoogleMapsText(newDepot.googleMapsUrl) && !newDepot.googleMapsUrl.includes('goo.gl') && (
+                        <p className="text-[10px] text-amber-300">
+                          ⚠ No coordinates found in this URL. Make sure you copy the address-bar URL (not a Share link) and that it includes <span className="font-mono">/@lat,lng</span>.
+                        </p>
+                      )}
+                      {newDepot.latitude && newDepot.longitude && (
+                        <p className="text-[10px] text-green-400 font-mono">✓ Coordinates: {newDepot.latitude}, {newDepot.longitude}</p>
+                      )}
                     </div>
                     <p className="text-[11px] text-xr-muted">Or: we try to look up your address (works best with country). You can also type latitude and longitude, or two numbers like 33.76, 72.82 below.</p>
                     <div className="grid grid-cols-2 gap-3">
