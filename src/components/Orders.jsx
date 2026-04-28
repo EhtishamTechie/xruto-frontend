@@ -175,6 +175,7 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
               driver_id: srv.driver_id ?? rt.driver_id,
               driver_name: srv.driver_name ?? rt.driver_name,
               status: srv.status ?? rt.status,
+              depot_start_name: rt.depot_start_name ?? srv.depot_start_name,
               maps_depot_name: srv.maps_depot_name ?? rt.maps_depot_name,
             };
           });
