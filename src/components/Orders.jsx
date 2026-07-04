@@ -596,8 +596,6 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
                 {demoSet ? `Load ${demoSet.charAt(0).toUpperCase() + demoSet.slice(1)} Demo Orders` : 'Select a Demo Set Above'}
               </button>
             </Card>
-
-            </div>
           </div>
         )}
 
