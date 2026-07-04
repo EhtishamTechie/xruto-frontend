@@ -806,13 +806,6 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                         </div>
                         <Toggle checked={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
                       </div>
-                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4 sm:col-span-2">
-                        <div>
-                          <p className="text-xs font-medium text-gray-400">Admin in delivery team</p>
-                          <p className="text-[11px] text-gray-600">Include the admin user as a driver in planning</p>
-                        </div>
-                        <Toggle checked={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
-                      </div>
                     </div>
                   </SectionCard>
                 </div>
@@ -831,18 +824,6 @@ const MyAdmin = ({ onNavigateToOrders }) => {
             <div className="grid gap-5 xl:grid-cols-2">
               <SectionCard title="Routing & capacity" subtitle="How routes are built and limited">
                 <div className="space-y-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:py-1">
-                    <span className="text-sm text-gray-300">How many drivers today</span>
-                    <div className="w-full min-w-0 sm:max-w-[220px]">
-                      <Dropdown
-                        value={settings.drivers_today_count || 3}
-                        options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map(n => ({ value: n, label: `${n} driver${n > 1 ? 's' : ''}` }))}
-                        onChange={v => handleSettingChange('drivers_today_count', v)}
-                        disabled={saving}
-                        placeholder="Select"
-                      />
-                    </div>
-                  </div>
                   <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
                     <span className="text-sm font-medium text-gray-300">Preferred navigation app</span>
                     {helpEnabled && <p className="mb-2 mt-1 text-xs text-orange-400/80">Google Maps supports 25 stops, HERE Maps supports 50 stops per route</p>}
@@ -856,14 +837,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                     value={settings.max_deliveries_per_route || 25}
                     onChange={v => handleSettingChange('max_deliveries_per_route', v)}
                     disabled={saving}
-                    helpText="Max deliveries per route"
-                  />
-                  <Stepper
-                    label="Trips per day"
-                    value={settings.max_routes_per_day || 10}
-                    onChange={v => handleSettingChange('max_routes_per_day', v)}
-                    disabled={saving}
-                    helpText="Max routes daily"
+                    helpText={settings.enable_stock_refill ? "Drivers return to depot for refill if route exceeds this." : "Hard limit per vehicle"}
                   />
                   <div className="flex items-center justify-between border-t border-white/5 pt-2">
                     <span className="text-sm text-gray-300">Auto-assign routes</span>
@@ -889,25 +863,9 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:py-1">
-                    <span className="text-sm text-gray-300">Route optimization</span>
-                    <div className="w-full min-w-0 sm:max-w-[220px]">
-                      <Dropdown
-                        value={settings.route_optimization_method || 'distance'}
-                        options={[
-                          { value: 'distance', label: 'Distance' },
-                          { value: 'time', label: 'Time' },
-                          { value: 'fuel_cost', label: 'Fuel cost' },
-                        ]}
-                        onChange={v => handleSettingChange('route_optimization_method', v)}
-                        disabled={saving}
-                        placeholder="Method"
-                      />
-                    </div>
-                  </div>
                   <div className="pt-1">
                     <SlideToConfirm
-                      label={saving ? 'Saving…' : 'Slide to save configuration'}
+                      label={saving ? 'Saving...' : 'Slide to save configuration'}
                       onConfirm={() => {
                         toast.success('Configuration saved!');
                         setSyncFlash(true);
