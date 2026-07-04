@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader, CheckCircle, AlertCircle, X, MapPin } from 'lucide-react';
+import { parseLatLngFromGoogleMapsText } from '../utils/googleMapsUrl';
 
 const ManualOrderForm = ({ onOrdersUploaded }) => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,8 @@ const ManualOrderForm = ({ onOrdersUploaded }) => {
     delivery_address: '',
     city: '',
     google_maps_url: '',
+    latitude: '',
+    longitude: '',
   });
 
   const [pendingOrders, setPendingOrders] = useState([]);
@@ -17,7 +20,23 @@ const ManualOrderForm = ({ onOrdersUploaded }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === 'google_maps_url') {
+      setFormData((prev) => {
+        const next = { ...prev, google_maps_url: value };
+        const found = parseLatLngFromGoogleMapsText(value);
+        if (found && !found.isShortUrl) {
+          next.latitude = String(found.latitude);
+          next.longitude = String(found.longitude);
+        } else if (found?.isShortUrl || (value && !found)) {
+          next.latitude = '';
+          next.longitude = '';
+        }
+        return next;
+      });
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleAddOrderToList = (e) => {
@@ -34,6 +53,8 @@ const ManualOrderForm = ({ onOrdersUploaded }) => {
       delivery_address: '',
       city: '',
       google_maps_url: '',
+      latitude: '',
+      longitude: '',
     });
     setError(null);
     setUploadResult(null);
@@ -56,6 +77,7 @@ Name: ${order.customer_name}
 Phone: ${order.customer_phone}
 Address: ${order.delivery_address}
 City: ${order.city}
+${order.latitude && order.longitude ? `Coordinates: ${order.latitude}, ${order.longitude}` : ''}
 ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
 
       const blob = new Blob([rawText], { type: 'text/plain' });
@@ -167,7 +189,24 @@ ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
             className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
             placeholder="e.g. https://maps.app.goo.gl/..."
           />
-          <p className="mt-1 text-[10px] text-gray-500">Paste a Maps link from WhatsApp to instantly locate the exact pin.</p>
+          <div className="mt-1 space-y-1">
+            {formData.google_maps_url && parseLatLngFromGoogleMapsText(formData.google_maps_url)?.isShortUrl && (
+              <p className="text-[10px] text-amber-300">
+                ⚠ This is a short link. Open it in your browser, then copy the full URL from the address bar.
+              </p>
+            )}
+            {formData.google_maps_url && !parseLatLngFromGoogleMapsText(formData.google_maps_url) && !formData.google_maps_url.includes('goo.gl') && (
+              <p className="text-[10px] text-amber-300">
+                ⚠ No coordinates found in this URL. Make sure it contains /@lat,lng.
+              </p>
+            )}
+            {formData.latitude && formData.longitude && (
+              <p className="text-[10px] text-emerald-400 font-mono">
+                ✓ Coordinates: {formData.latitude}, {formData.longitude}
+              </p>
+            )}
+            <p className="text-[10px] text-gray-500">Paste a Maps link from WhatsApp to instantly locate the exact pin.</p>
+          </div>
         </div>
 
         <button
