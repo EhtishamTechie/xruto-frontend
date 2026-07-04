@@ -10,6 +10,7 @@ const ManualOrderForm = ({ onOrdersUploaded }) => {
     google_maps_url: '',
   });
 
+  const [pendingOrders, setPendingOrders] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [error, setError] = useState(null);
@@ -19,30 +20,47 @@ const ManualOrderForm = ({ onOrdersUploaded }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleAddOrderToList = (e) => {
     e.preventDefault();
     if (!formData.customer_name || !formData.delivery_address) {
       setError('Name and Address are required.');
       return;
     }
 
+    setPendingOrders(prev => [...prev, { ...formData }]);
+    setFormData({
+      customer_name: '',
+      customer_phone: '',
+      delivery_address: '',
+      city: '',
+      google_maps_url: '',
+    });
+    setError(null);
+    setUploadResult(null);
+  };
+
+  const handleRemoveOrder = (index) => {
+    setPendingOrders(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFinalizeOrders = async () => {
+    if (pendingOrders.length === 0) return;
+    
     setIsProcessing(true);
     setError(null);
     setUploadResult(null);
 
     try {
-      // We can use the upload-document endpoint by generating a text file from the form data
-      // Or we can just build the raw text and send it. 
-      // The easiest way is to build a string that the Magic Parser understands perfectly.
-      const rawText = `Name: ${formData.customer_name}
-Phone: ${formData.customer_phone}
-Address: ${formData.delivery_address}
-City: ${formData.city}
-${formData.google_maps_url ? `Link: ${formData.google_maps_url}` : ''}`;
+      const rawText = pendingOrders.map((order, index) => `Order ${index + 1}:
+Name: ${order.customer_name}
+Phone: ${order.customer_phone}
+Address: ${order.delivery_address}
+City: ${order.city}
+${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
 
       const blob = new Blob([rawText], { type: 'text/plain' });
       const dataForm = new FormData();
-      dataForm.append('file', blob, 'manual_order.txt');
+      dataForm.append('file', blob, 'manual_orders.txt');
 
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${API_BASE_URL}/orders/upload-document`, {
@@ -55,26 +73,20 @@ ${formData.google_maps_url ? `Link: ${formData.google_maps_url}` : ''}`;
       if (data.success) {
         setUploadResult({
           success: true,
-          message: 'Order added successfully!',
+          message: `Successfully added ${pendingOrders.length} order${pendingOrders.length > 1 ? 's' : ''}!`,
         });
 
         if (onOrdersUploaded && data.orders) {
           onOrdersUploaded(data.orders);
         }
 
-        setFormData({
-          customer_name: '',
-          customer_phone: '',
-          delivery_address: '',
-          city: '',
-          google_maps_url: '',
-        });
+        setPendingOrders([]); // Clear pending orders after successful upload
       } else {
-        setError(data.message || 'Failed to add order');
+        setError(data.message || 'Failed to add orders');
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setError('Failed to add order. Please try again.');
+      setError('Failed to add orders. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -90,7 +102,7 @@ ${formData.google_maps_url ? `Link: ${formData.google_maps_url}` : ''}`;
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+      <form onSubmit={handleAddOrderToList} className="p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-400">Customer Name *</label>
@@ -160,19 +172,45 @@ ${formData.google_maps_url ? `Link: ${formData.google_maps_url}` : ''}`;
 
         <button
           type="submit"
-          disabled={isProcessing}
-          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#F59E0B] px-4 font-bold text-black shadow-panel transition duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 font-medium text-white transition hover:bg-white/10"
         >
-          {isProcessing ? (
-            <>
-              <Loader className="h-4 w-4 animate-spin" />
-              Adding...
-            </>
-          ) : (
-            'Add Order'
-          )}
+          Add to List
         </button>
       </form>
+
+      {pendingOrders.length > 0 && (
+        <div className="border-t border-white/5 bg-white/[0.01] p-4 sm:p-5">
+          <h4 className="mb-3 text-sm font-semibold text-white">Pending Orders ({pendingOrders.length})</h4>
+          <ul className="mb-4 space-y-2 max-h-48 overflow-y-auto">
+            {pendingOrders.map((order, i) => (
+              <li key={i} className="flex items-start justify-between rounded-lg border border-white/10 bg-white/[0.02] p-3 text-xs">
+                <div className="min-w-0 pr-4">
+                  <p className="font-medium text-gray-200 truncate">{order.customer_name}</p>
+                  <p className="mt-0.5 text-gray-500 truncate">{order.delivery_address}</p>
+                </div>
+                <button type="button" onClick={() => handleRemoveOrder(i)} className="text-gray-500 hover:text-red-400">
+                  <X className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={handleFinalizeOrders}
+            disabled={isProcessing}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#F59E0B] px-4 font-bold text-black shadow-panel transition duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isProcessing ? (
+              <>
+                <Loader className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Finalize & Submit ${pendingOrders.length} Order${pendingOrders.length > 1 ? 's' : ''}`
+            )}
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="mx-4 mb-4 flex gap-2 rounded-xl border border-red-500/25 bg-red-500/10 p-3 sm:mx-5">
