@@ -28,16 +28,52 @@ const driverAPI = {
     }
   },
   updateDeliveryStatus: async (orderId, status) => {
-    const response = await fetch(`${API_BASE_URL}/orders/delivery-status/${orderId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, timestamp: new Date().toISOString() })
-    });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}`);
+    const data = { status, timestamp: new Date().toISOString() };
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/delivery-status/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      // Offline fallback: save to IndexedDB
+      if (!navigator.onLine || error.name === 'TypeError' || error.message === 'Failed to fetch') {
+        try {
+          const db = await new Promise((resolve, reject) => {
+            const req = indexedDB.open('xruto-offline-db', 1);
+            req.onerror = () => reject(req.error);
+            req.onsuccess = () => resolve(req.result);
+            req.onupgradeneeded = (e) => {
+              const d = e.target.result;
+              if (!d.objectStoreNames.contains('delivery-updates')) {
+                d.createObjectStore('delivery-updates', { keyPath: 'id', autoIncrement: true });
+              }
+            };
+          });
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction('delivery-updates', 'readwrite');
+            const store = tx.objectStore('delivery-updates');
+            const req = store.add({ orderId, data });
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
+          
+          if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.sync.register('delivery-status-update');
+          }
+          return { success: true, offline: true };
+        } catch (dbError) {
+          throw new Error('You are offline and we could not save your update locally.');
+        }
+      }
+      throw error;
     }
-    return response.json();
   }
 };
 

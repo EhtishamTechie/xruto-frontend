@@ -288,15 +288,46 @@ async function syncOrderUploads() {
   }
 }
 
-// Helper functions for IndexedDB storage (simplified)
+const DB_NAME = 'xruto-offline-db';
+const DB_VERSION = 1;
+
+function getDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('delivery-updates')) {
+        db.createObjectStore('delivery-updates', { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains('order-uploads')) {
+        db.createObjectStore('order-uploads', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
+}
+
 async function getStoredUpdates(storeName) {
-  // Implement IndexedDB operations for offline storage
-  return []; // Placeholder
+  const db = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
 }
 
 async function removeStoredUpdate(storeName, id) {
-  // Implement IndexedDB remove operation
-  return true; // Placeholder
+  const db = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.delete(id);
+    request.onsuccess = () => resolve(true);
+    request.onerror = () => reject(request.error);
+  });
 }
 
 // Push notification handling
