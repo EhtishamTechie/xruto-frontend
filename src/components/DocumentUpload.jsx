@@ -22,26 +22,39 @@ const PDFUpload = ({ onOrdersUploaded }) => {
     e.preventDefault();
     setIsDragging(false);
     
-    const files = Array.from(e.dataTransfer.files);
-    const pdfFile = files.find(file => file.type === 'application/pdf');
+    const selectedFile = e.dataTransfer.files[0];
+    if (selectedFile) {
+      validateAndSetFile(selectedFile);
+    }
+  };
+
+  const validateAndSetFile = (selectedFile) => {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv', 'text/plain'];
+    const ext = selectedFile.name.split('.').pop().toLowerCase();
+    const allowedExts = ['pdf', 'docx', 'xlsx', 'xls', 'csv', 'txt'];
     
-    if (pdfFile) {
-      handleFileUpload(pdfFile);
+    if (allowedTypes.includes(selectedFile.type) || allowedExts.includes(ext)) {
+      setFile(selectedFile);
+      setError(null);
+      setUploadResult(null);
+      handleUpload(selectedFile);
     } else {
-      setError('Please drop a PDF file');
+      setFile(null);
+      setError('Please select a valid PDF, DOCX, XLSX, CSV, or TXT file.');
     }
   };
 
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      handleFileUpload(file);
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      validateAndSetFile(selectedFile);
     }
   };
 
-  const handleFileUpload = async (file) => {
-    if (file.type !== 'application/pdf') {
-      setError('Please select a PDF file');
+  const handleUpload = async (fileToUpload) => {
+    const file = fileToUpload || file;
+    if (!file) {
+      setError('Please select a file first.');
       return;
     }
 
@@ -50,16 +63,16 @@ const PDFUpload = ({ onOrdersUploaded }) => {
       return;
     }
 
-    setIsUploading(true);
+    setIsProcessing(true);
     setError(null);
     setUploadResult(null);
 
     const formData = new FormData();
-    formData.append('pdfFile', file);
+    formData.append('file', file);
 
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_BASE_URL}/orders/upload-pdf`, {
+      const response = await fetch(`${API_BASE_URL}/orders/upload-document`, {
         method: 'POST',
         body: formData,
       });

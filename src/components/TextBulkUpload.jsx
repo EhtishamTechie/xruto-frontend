@@ -44,102 +44,21 @@ Longitude: -2.5763532
 Value: £52.30
 Weight: 2.8kg`;
 
-  const parseTextOrders = (text) => {
-    const orders = [];
-    const orderBlocks = text.split(/Order\s+\d+:/i).filter((block) => block.trim().length > 0);
-
-    orderBlocks.forEach((block) => {
-      const lines = block
-        .trim()
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-
-      const order = {
-        delivery_date: new Date().toISOString().split('T')[0],
-        status: 'pending',
-      };
-
-      lines.forEach((line) => {
-        const colonIndex = line.indexOf(':');
-        if (colonIndex === -1) return;
-
-        const key = line.substring(0, colonIndex).trim().toLowerCase();
-        const value = line.substring(colonIndex + 1).trim();
-
-        switch (key) {
-          case 'customer':
-            order.customer_name = value;
-            break;
-          case 'email':
-            order.customer_email = value;
-            break;
-          case 'phone':
-            order.customer_phone = value;
-            break;
-          case 'address':
-            order.delivery_address = value;
-            break;
-          case 'postcode':
-            order.postcode = value;
-            break;
-          case 'city':
-            order.city = value;
-            break;
-          case 'latitude':
-            order.latitude = parseFloat(value) || null;
-            break;
-          case 'longitude':
-            order.longitude = parseFloat(value) || null;
-            break;
-          case 'value': {
-            const cleanValue = value.replace(/[£$,]/g, '');
-            order.order_value = parseFloat(cleanValue) || 0;
-            break;
-          }
-          case 'weight': {
-            const cleanWeight = value.replace(/[a-zA-Z]/g, '');
-            order.weight = parseFloat(cleanWeight) || 0;
-            break;
-          }
-          default:
-            break;
-        }
-      });
-
-      if (order.customer_name && order.delivery_address) {
-        orders.push(order);
-      }
-    });
-
-    return orders;
-  };
-
   const handlePreview = () => {
     if (!textInput.trim()) {
       setError('Please enter order text');
       return;
     }
 
-    try {
-      const parsed = parseTextOrders(textInput);
-
-      if (parsed.length === 0) {
-        setError('No valid orders found. Please check the format.');
-        return;
-      }
-
-      setPreviewOrders(parsed);
-      setError(null);
-    } catch (e) {
-      console.error('Parse error:', e);
-      setError('Failed to parse orders. Please check the format.');
-    }
+    // In the new Magic Input system, we let the backend parse the raw text.
+    // We just show a preview that the text is ready.
+    setPreviewOrders([{ customer_name: 'Raw Text Block', delivery_address: `${textInput.split('\\n').length} lines of text to be processed` }]);
+    setError(null);
   };
 
   const handleSubmit = async () => {
-    if (previewOrders.length === 0) {
-      setError('Please preview orders first');
+    if (!textInput.trim()) {
+      setError('Please enter order text');
       return;
     }
 
@@ -148,11 +67,15 @@ Weight: 2.8kg`;
     setUploadResult(null);
 
     try {
+      // Create a text file blob
+      const blob = new Blob([textInput], { type: 'text/plain' });
+      const formData = new FormData();
+      formData.append('file', blob, 'paste.txt');
+
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${API_BASE_URL}/orders/upload-text`, {
+      const response = await fetch(`${API_BASE_URL}/orders/upload-document`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orders: previewOrders }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -160,10 +83,10 @@ Weight: 2.8kg`;
       if (data.success) {
         setUploadResult({
           success: true,
-          message: data.message,
-          extractedCount: previewOrders.length,
-          insertedCount: data.insertedCount || previewOrders.length,
-          orders: data.orders || previewOrders,
+          message: data.message || 'Text processed successfully!',
+          extractedCount: data.orders?.length || 0,
+          insertedCount: data.insertedCount || data.orders?.length || 0,
+          orders: data.orders || [],
         });
 
         if (onOrdersUploaded && data.orders) {
@@ -330,14 +253,15 @@ Weight: 2.8kg`;
           <ChevronDown className="h-4 w-4 shrink-0 text-gray-500 transition group-open:rotate-180" />
         </summary>
         <div className="space-y-2 px-4 pb-4 text-xs text-gray-500 sm:px-5">
-          <p>Start each order with <code className="rounded bg-white/5 px-1 text-gray-300">Order 1:</code> (any number). Use <code className="rounded bg-white/5 px-1">Field: value</code> on separate lines.</p>
-          <p>Required: <span className="text-gray-400">Customer</span>, <span className="text-gray-400">Address</span>. Optional: Email, Phone, Postcode, City, coordinates, value, weight.</p>
+          <p>Our Magic Input system automatically extracts names, phone numbers, and addresses from any text. Just paste raw text!</p>
+          <p>You can even just paste a list of <span className="text-gray-400">Google Maps links</span> (even short ones like maps.app.goo.gl) and we will extract the exact coordinates automatically.</p>
           <pre className="mt-2 overflow-x-auto rounded-lg border border-[#1a2a45] bg-[#0a0e1a] p-2.5 font-mono text-[11px] leading-relaxed text-gray-400">
-            {`Order 1:
-Customer: John Smith
-Address: 123 Main St, Warrington WA1 2AB
-Value: £45.99
-Weight: 2.5kg`}
+            {`Deliver 2 boxes to Usman Ali at F-7 Markaz
+Phone: 0300-1234567
+
+https://maps.app.goo.gl/xxx
+Name: Sarah Wilson
+`}
           </pre>
         </div>
       </details>

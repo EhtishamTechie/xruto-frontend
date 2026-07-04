@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import PDFUpload from './PDFUpload';
+import DocumentUpload from './DocumentUpload';
 import TextBulkUpload from './TextBulkUpload';
+import ManualOrderForm from './ManualOrderForm';
 import { Modal } from '../ui/Modal';
 import { Card as UiCard, CardBody, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -475,16 +476,17 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
                 <div className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-1">
                   <div
                     aria-hidden
-                    className="absolute top-1 bottom-1 w-1/3 rounded-xl bg-xr-brand transition-all duration-150"
+                    className="absolute bottom-1 top-1 rounded-lg bg-[#F59E0B] shadow-sm transition-all duration-300 ease-out"
                     style={{
-                      left: uploadMethod === 'text' ? '4px' : uploadMethod === 'pdf' ? 'calc(33.333% + 2px)' : 'calc(66.666% + 0px)',
+                      width: 'calc(33.333% - 6px)',
+                      left: uploadMethod === 'manual' ? '4px' : uploadMethod === 'text' ? 'calc(33.333% + 2px)' : 'calc(66.666% + 0px)',
                     }}
                   />
                   <div className="relative grid grid-cols-3 gap-1">
                     {[
-                      { id: 'text', label: 'Text', icon: 'Aa' },
-                      { id: 'pdf', label: 'PDF', icon: 'PDF' },
-                      { id: 'excel', label: 'Excel', icon: 'XLS' },
+                      { id: 'manual', label: 'Manual Form', icon: '✍️' },
+                      { id: 'text', label: 'Magic Paste', icon: 'Aa' },
+                      { id: 'document', label: 'Upload Document', icon: 'DOC' },
                     ].map(m => (
                       <button
                         key={m.id}
@@ -503,38 +505,15 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
                   </div>
                 </div>
 
-                  <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs text-xr-subtle transition duration-150 hover:border-xr-brand/25 hover:bg-xr-brand/[0.06]">
+                <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-xs text-xr-subtle transition duration-150 hover:border-xr-brand/25 hover:bg-xr-brand/[0.06]">
                   Drop files here (PDF/Excel), then use the import panel below for your selected format.
                 </div>
-            </Card>
-
-            <div className="min-w-0 space-y-4 animate-fade-up">
-              {uploadMethod === 'text' && <TextBulkUpload onOrdersUploaded={handleOrdersUploaded} />}
-              {uploadMethod === 'pdf' && <PDFUpload onOrdersUploaded={handleOrdersUploaded} />}
-              {uploadMethod === 'excel' && (
-                <Card title="Excel upload" subtitle=".xlsx / .xls — Order ID, Customer Name, Address, Lat, Lon, Meal Qty">
-                  <label className="block w-full cursor-pointer rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-center transition duration-150 hover:border-xr-brand/30 hover:bg-xr-brand/[0.06]">
-                    <span className="text-sm text-gray-300">{excelFile ? excelFile.name : 'Choose Excel file'}</span>
-                    <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => { setExcelFile(e.target.files[0] || null); setExcelResult(null); }} />
-                  </label>
-                  {excelFile && (
-                    <div className="mt-4">
-                      <SlideToConfirm label="Slide to upload" loadingLabel="Uploading..." loading={excelUploading} onConfirm={async () => {
-                        setExcelUploading(true); setExcelResult(null);
-                        try {
-                          const form = new FormData(); form.append('excelFile', excelFile);
-                          const res = await fetch(`${API_BASE_URL}/orders/upload-excel`, { method: 'POST', body: form });
-                          const data = await res.json();
-                          if (data.success) { setExcelResult({ ok: true, msg: data.message }); setExcelFile(null); if (handleOrdersUploaded) handleOrdersUploaded(data.orders); }
-                          else setExcelResult({ ok: false, msg: data.message });
-                        } catch (e) { setExcelResult({ ok: false, msg: e.message }); }
-                        setExcelUploading(false);
-                      }} />
-                    </div>
-                  )}
-                  {excelResult && <div className={`mt-3 rounded-2xl border p-3 text-xs ${excelResult.ok ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-red-500/20 bg-red-500/10 text-red-200'}`}>{excelResult.msg}</div>}
-                </Card>
-              )}
+                <div className="min-w-0 space-y-4 animate-fade-up mt-4">
+                  {uploadMethod === 'manual' && <ManualOrderForm onOrdersUploaded={handleOrdersUploaded} />}
+                  {uploadMethod === 'text' && <TextBulkUpload onOrdersUploaded={handleOrdersUploaded} />}
+                  {uploadMethod === 'document' && <DocumentUpload onOrdersUploaded={handleOrdersUploaded} />}
+                </div>
+              </Card>
             </div>
 
             <Card
