@@ -52,7 +52,7 @@ const LoginInputField = ({ icon, type = 'text', value, onChange, placeholder, sh
   <div className="relative">
     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xr-muted"><Ico d={icon} className="w-4.5 h-4.5" /></div>
     <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-      className="w-full rounded-control border border-white/10 bg-xr-bg/50 py-3.5 pl-11 pr-11 text-sm text-xr-text placeholder-xr-muted backdrop-blur-sm transition focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/20" />
+      className="w-full rounded-control border border-xr-border bg-xr-bg/50 py-3.5 pl-11 pr-11 text-sm text-xr-text placeholder-xr-muted backdrop-blur-sm transition focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/40" />
     {showToggle && (
       <button type="button" onClick={onToggle} className="absolute right-4 top-1/2 -translate-y-1/2 text-xr-muted hover:text-xr-text">
         <Ico d={isPassword ? ICONS.eyeOff : ICONS.eye} className="w-4.5 h-4.5" />
@@ -398,13 +398,13 @@ const AnalyticsScreen = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-xr-border pb-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-xr-muted">
           <span className="text-xr-secondary">{range.start}</span>
-          <span className="mx-1.5 text-white/25">—</span>
+          <span className="mx-1.5 text-xr-text/25">—</span>
           <span className="text-xr-secondary">{range.end}</span>
         </p>
-        <div className="inline-flex w-full max-w-md overflow-x-auto rounded-control border border-white/10 bg-white/[0.03] p-1 sm:w-auto">
+        <div className="inline-flex w-full max-w-md overflow-x-auto rounded-control border border-xr-border bg-xr-overlay p-1 sm:w-auto">
           {[
             { id: 'today', label: 'Today' },
             { id: 'week', label: '7d' },
@@ -588,7 +588,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
   };
 
   const inputCls =
-    'w-full rounded-control border border-white/10 bg-xr-bg/60 px-4 py-2.5 text-sm text-xr-text placeholder-xr-muted focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/20';
+    'w-full rounded-control border border-xr-border bg-xr-bg/60 px-4 py-2.5 text-sm text-xr-text placeholder-xr-muted focus:border-xr-brand/40 focus:outline-none focus:ring-2 focus:ring-xr-brand/40';
 
   const goHome = () => {
     setPanel('home');
@@ -605,14 +605,14 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left transition hover:border-xr-brand/25 hover:bg-white/[0.05]"
+      className="flex w-full items-center justify-between gap-3 rounded-card border border-xr-border bg-xr-overlay px-4 py-3.5 text-left transition hover:border-xr-brand/25 hover:bg-xr-overlay"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-white/10 bg-xr-bg/80 text-xr-secondary">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-xr-border bg-xr-bg/80 text-xr-secondary">
           <Ico d={icon} className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-white">{label}</p>
+          <p className="text-sm font-medium text-xr-text">{label}</p>
           {hint && <p className="text-xs text-xr-muted">{hint}</p>}
         </div>
       </div>
@@ -631,7 +631,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
               <div className="mt-3 flex h-16 w-16 items-center justify-center rounded-card bg-gradient-to-br from-xr-brand to-amber-600 text-xl font-bold text-black shadow-lg shadow-xr-brand/25">
                 {initials}
               </div>
-              <p className="mt-3 text-base font-semibold text-white">{user?.name || 'User'}</p>
+              <p className="mt-3 text-base font-semibold text-xr-text">{user?.name || 'User'}</p>
               <p className="text-xs text-xr-muted">{user?.role === 'admin' ? 'Administrator' : 'Driver'}</p>
               {user?.email && <p className="mt-2 max-w-full truncate text-xs text-xr-subtle">{user.email}</p>}
             </UiCard>
@@ -655,7 +655,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
         {panel === 'profile' && (
           <div>
             <BackLink />
-            <h2 className="text-xl font-bold tracking-tight text-white">Profile</h2>
+            <h2 className="text-xl font-bold tracking-tight text-xr-text">Profile</h2>
             <p className="mt-1 text-sm text-xr-muted">How you appear in the app.</p>
             <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
               <div>
@@ -673,7 +673,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
         {panel === 'password' && (
           <div>
             <BackLink />
-            <h2 className="text-xl font-bold tracking-tight text-white">Security</h2>
+            <h2 className="text-xl font-bold tracking-tight text-xr-text">Security</h2>
             <p className="mt-1 text-sm text-xr-muted">Change your account password.</p>
             <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
               <div>
@@ -698,7 +698,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
         {panel === 'contact' && (
           <div>
             <BackLink />
-            <h2 className="text-xl font-bold tracking-tight text-white">Contact</h2>
+            <h2 className="text-xl font-bold tracking-tight text-xr-text">Contact</h2>
             <p className="mt-1 text-sm text-xr-muted">We respond within one business day.</p>
             <UiCard variant="glass" className="mt-4 space-y-3 p-5 text-sm text-xr-secondary sm:p-6">
               <p>
@@ -716,11 +716,11 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
         {panel === 'woocommerce' && user?.role === 'admin' && (
           <div>
             <BackLink />
-            <h2 className="text-xl font-bold tracking-tight text-white">WooCommerce</h2>
+            <h2 className="text-xl font-bold tracking-tight text-xr-text">WooCommerce</h2>
             <p className="mt-1 text-sm text-xr-muted">Connect stores and sync orders.</p>
             <UiCard variant="glass" className="mt-4 space-y-4 p-5 sm:p-6">
               <div>
-                <h3 className="text-sm font-semibold text-white">Connected stores</h3>
+                <h3 className="text-sm font-semibold text-xr-text">Connected stores</h3>
                 <p className="mt-1 text-xs text-xr-muted">REST API keys from WooCommerce → Settings → Advanced → REST API</p>
               </div>
               {wooStores.length === 0 ? (
@@ -730,10 +730,10 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
                   {wooStores.map((store) => (
                     <div
                       key={store.id}
-                      className="flex items-center justify-between gap-3 rounded-control border border-white/10 bg-xr-bg/40 px-4 py-3"
+                      className="flex items-center justify-between gap-3 rounded-control border border-xr-border bg-xr-bg/40 px-4 py-3"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">{store.name}</p>
+                        <p className="text-sm font-medium text-xr-text">{store.name}</p>
                         <p className="truncate text-xs text-xr-muted">{store.url}</p>
                       </div>
                       <Button type="button" variant="ghost" size="sm" className="shrink-0 text-red-300 hover:bg-xr-danger/10" onClick={() => removeWooStore(store.id)}>
@@ -743,7 +743,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
                   ))}
                 </div>
               )}
-              <div className="space-y-3 border-t border-white/5 pt-4">
+              <div className="space-y-3 border-t border-xr-border pt-4">
                 <p className="text-caption font-medium uppercase tracking-wider text-xr-muted">Add store</p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input className={inputCls} placeholder="Store name" value={wooForm.name} onChange={(e) => setWooForm((f) => ({ ...f, name: e.target.value }))} />
@@ -762,7 +762,7 @@ const SettingsScreen = ({ user, onLogout, onUserUpdate }) => {
                 <SlideToConfirm label="Slide to add store" onConfirm={addWooStore} loading={wooLoading} />
               </div>
               {wooStores.length > 0 && (
-                <div className="border-t border-white/5 pt-4">
+                <div className="border-t border-xr-border pt-4">
                   <SlideToConfirm label="Slide to sync orders" onConfirm={syncWooOrders} loading={syncLoading} />
                 </div>
               )}

@@ -38,7 +38,7 @@ export function Modal({ open, title, description, children, onClose, className }
       >
         {(title || description) && (
           <div className="mb-4">
-            {title && <h3 className="text-white font-semibold">{title}</h3>}
+            {title && <h3 className="text-xr-text font-semibold">{title}</h3>}
             {description && <p className="mt-1 text-xs text-xr-subtle">{description}</p>}
           </div>
         )}

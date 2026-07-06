@@ -22,6 +22,10 @@ export default {
           text: 'var(--xr-text)',
           secondary: 'var(--xr-secondary)',
           muted: 'var(--xr-muted)',
+          
+          // Overlays
+          overlay: 'var(--xr-overlay)',
+          'overlay-hover': 'var(--xr-overlay-hover)',
 
           // Accent + semantic (soft)
           brand: 'var(--xr-brand)',

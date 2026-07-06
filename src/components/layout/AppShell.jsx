@@ -71,18 +71,18 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
         {/* Sidebar */}
         <aside
           className={cn(
-            'hidden md:flex h-screen sticky top-0 shrink-0 flex-col border-r border-white/10 bg-xr-surface/60 backdrop-blur-xl',
+            'hidden md:flex h-screen sticky top-0 shrink-0 flex-col border-r border-xr-border bg-xr-surface/60 backdrop-blur-xl',
             collapsed ? 'w-[76px]' : 'w-[232px]'
           )}
         >
           <div className={cn('flex items-center justify-between px-4 py-4', collapsed && 'px-3')}>
             <div className={cn('flex items-center gap-3 min-w-0', collapsed && 'gap-0')}>
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-control border border-white/10 bg-white/[0.03] p-px">
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-control border border-xr-border bg-xr-overlay p-px">
                 <BrandLogo className="h-8 w-8" alt="" />
               </div>
               {!collapsed && (
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-white">xRuto</div>
+                  <div className="text-sm font-semibold text-xr-text">xRuto</div>
                   <div className="text-[11px] text-xr-muted">Logistics Intelligence</div>
                 </div>
               )}
@@ -92,7 +92,7 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
               type="button"
               onClick={toggleCollapsed}
               className={cn(
-                'ml-2 inline-flex h-9 w-9 items-center justify-center rounded-control border border-white/10 bg-white/[0.03] text-xr-secondary transition hover:bg-white/[0.06]',
+                'ml-2 inline-flex h-9 w-9 items-center justify-center rounded-control border border-xr-border bg-xr-overlay text-xr-secondary transition hover:bg-xr-overlay-hover',
                 collapsed && 'ml-0'
               )}
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -115,8 +115,8 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
                       'group relative flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition',
                       collapsed && 'justify-center px-2',
                       active
-                        ? 'bg-white/[0.06] text-white ring-1 ring-inset ring-xr-brand/20'
-                        : 'text-xr-secondary hover:bg-white/[0.04] hover:text-xr-text'
+                        ? 'bg-xr-overlay-hover text-xr-text ring-1 ring-inset ring-xr-brand/40'
+                        : 'text-xr-secondary hover:bg-xr-overlay hover:text-xr-text'
                     )}
                     title={collapsed ? t.label : undefined}
                   >
@@ -134,14 +134,14 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
             </div>
           </nav>
 
-          <div className={cn('border-t border-white/10 p-3', collapsed && 'p-2')}>
-            <div className={cn('flex items-center gap-3 rounded-control border border-white/10 bg-white/[0.03] p-3', collapsed && 'justify-center p-2')}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-xr-bg ring-1 ring-xr-brand/25 text-[11px] font-bold text-white">
+          <div className={cn('border-t border-xr-border p-3', collapsed && 'p-2')}>
+            <div className={cn('flex items-center gap-3 rounded-control border border-xr-border bg-xr-overlay p-3', collapsed && 'justify-center p-2')}>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-xr-bg ring-1 ring-xr-brand/25 text-[11px] font-bold text-xr-text">
                 {initials}
               </div>
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-white">{user?.name || 'User'}</div>
+                  <div className="truncate text-sm font-medium text-xr-text">{user?.name || 'User'}</div>
                   <div className="truncate text-[11px] text-xr-muted">{isAdmin ? 'Administrator' : 'Driver'}</div>
                 </div>
               )}
@@ -172,7 +172,7 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
         {/* Main */}
         <div className="relative flex min-w-0 flex-1 flex-col">
           {/* Topbar */}
-          <header className="sticky top-0 z-30 border-b border-white/10 bg-xr-bg/65 backdrop-blur-xl">
+          <header className="sticky top-0 z-30 border-b border-xr-border bg-xr-bg/65 backdrop-blur-xl">
             <div className="mx-auto max-w-section px-4 py-3 sm:px-6 sm:py-4">
               <div className="flex min-h-12 items-center justify-between gap-3 sm:min-h-0 sm:gap-4">
                 <div className="min-w-0">
@@ -181,13 +181,13 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
                     <span className="opacity-40">/</span>
                     <span className="text-xr-secondary">{meta.breadcrumb?.[1] || meta.label}</span>
                   </div>
-                  <div className="mt-1 text-h2 text-white">{meta.breadcrumb?.[1] || meta.label}</div>
+                  <div className="mt-1 text-h2 text-xr-text">{meta.breadcrumb?.[1] || meta.label}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={toggleTheme}
-                    className="flex h-9 w-9 items-center justify-center rounded-control border border-white/10 bg-white/[0.03] text-xr-muted transition hover:text-xr-brand hover:bg-white/[0.06]"
+                    className="flex h-9 w-9 items-center justify-center rounded-control border border-xr-border bg-xr-overlay text-xr-muted transition hover:text-xr-brand hover:bg-xr-overlay-hover"
                     aria-label="Toggle theme"
                   >
                     {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -211,7 +211,7 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
 
       {/* Mobile bottom navigation — primary nav is sidebar-only on md+ */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-xr-bg/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-xr-border bg-xr-bg/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur-xl"
         aria-label="Primary"
       >
         <div

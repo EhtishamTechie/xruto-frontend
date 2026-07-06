@@ -5,9 +5,9 @@ export function Card({ as: Comp = 'section', variant = 'glass', className, child
   const base =
     'rounded-card border shadow-panel ring-1 ring-inset ring-white/[0.04] transition duration-200 will-change-transform';
   const variants = {
-    glass: 'glass-card border-white/10 hover:-translate-y-[1px] hover:shadow-soft hover:shadow-black/35',
+    glass: 'glass-card border-xr-border hover:-translate-y-[1px] hover:shadow-soft hover:shadow-black/35',
     solid: 'bg-xr-surface border-xr-line hover:-translate-y-[1px] hover:shadow-soft hover:shadow-black/35',
-    soft: 'bg-white/[0.03] border-white/10 backdrop-blur-sm hover:bg-white/[0.05]',
+    soft: 'bg-xr-overlay border-xr-border backdrop-blur-sm hover:bg-xr-overlay',
   };
   return (
     <Comp className={cn(base, variants[variant] || variants.glass, className)} {...props}>
@@ -19,7 +19,7 @@ export function Card({ as: Comp = 'section', variant = 'glass', className, child
 export function CardHeader({ className, children, ...props }) {
   return (
     <header
-      className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-white/5 px-4 py-3 sm:px-5 sm:py-3.5', className)}
+      className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-xr-border px-4 py-3 sm:px-5 sm:py-3.5', className)}
       {...props}
     >
       {children}

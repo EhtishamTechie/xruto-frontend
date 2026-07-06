@@ -170,11 +170,11 @@ const PDFUpload = ({ onOrdersUploaded }) => {
   };
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-[#1a2a45] bg-gradient-to-b from-[#111b2e] to-[#0c1320] shadow-lg shadow-black/30">
-      <div className="border-b border-white/5 px-4 py-3 sm:px-5 sm:py-3.5">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">File import</p>
-        <h3 className="text-sm font-semibold text-white sm:text-base">PDF upload</h3>
-        <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">Drop a PDF; we extract customers, addresses, and line items (text-based PDFs work best).</p>
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-xr-border bg-gradient-to-b from-[#111b2e] to-[#0c1320] shadow-lg shadow-black/30">
+      <div className="border-b border-xr-border px-4 py-3 sm:px-5 sm:py-3.5">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-xr-muted">File import</p>
+        <h3 className="text-sm font-semibold text-xr-text sm:text-base">PDF upload</h3>
+        <p className="mt-0.5 text-xs text-xr-muted sm:text-sm">Drop a PDF; we extract customers, addresses, and line items (text-based PDFs work best).</p>
       </div>
 
       <div className="p-4 sm:p-5">
@@ -182,7 +182,7 @@ const PDFUpload = ({ onOrdersUploaded }) => {
           className={`relative cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition sm:p-8 ${
             isDragging
               ? 'border-orange-500/60 bg-orange-500/10'
-              : 'border-[#1a2a45] bg-[#0a0e1a] hover:border-orange-500/30'
+              : 'border-xr-border bg-xr-surface hover:border-orange-500/30'
           } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -204,14 +204,14 @@ const PDFUpload = ({ onOrdersUploaded }) => {
           {isUploading ? (
             <div className="flex flex-col items-center">
               <Loader className="mb-3 h-10 w-10 animate-spin text-blue-400" />
-              <p className="text-sm font-medium text-white">Processing PDF…</p>
-              <p className="text-xs text-gray-500">This may take a few moments</p>
+              <p className="text-sm font-medium text-xr-text">Processing PDF…</p>
+              <p className="text-xs text-xr-muted">This may take a few moments</p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <Upload className="mb-3 h-10 w-10 text-gray-500" />
-              <p className="mb-1 text-sm font-medium text-gray-200">Drop PDF here or click to browse</p>
-              <p className="text-xs text-gray-500">Up to 10&nbsp;MB</p>
+              <Upload className="mb-3 h-10 w-10 text-xr-muted" />
+              <p className="mb-1 text-sm font-medium text-xr-secondary">Drop PDF here or click to browse</p>
+              <p className="text-xs text-xr-muted">Up to 10&nbsp;MB</p>
             </div>
           )}
         </div>
@@ -221,7 +221,7 @@ const PDFUpload = ({ onOrdersUploaded }) => {
             type="button"
             onClick={generateTestOrders}
             disabled={isUploading}
-            className="rounded-xl border border-[#1a2a45] bg-[#0a0e1a] px-4 py-2.5 text-sm font-medium text-gray-300 transition hover:border-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-xr-border bg-xr-surface px-4 py-2.5 text-sm font-medium text-xr-secondary transition hover:border-xr-border hover:text-xr-text disabled:cursor-not-allowed disabled:opacity-50"
           >
             Generate test orders
           </button>
@@ -256,18 +256,18 @@ const PDFUpload = ({ onOrdersUploaded }) => {
             </div>
             {uploadResult.orders && uploadResult.orders.length > 0 && (
               <details className="mt-3 cursor-pointer">
-                <summary className="text-xs font-medium text-emerald-200 hover:text-white">
+                <summary className="text-xs font-medium text-emerald-200 hover:text-xr-text">
                   View orders ({uploadResult.orders.length})
                 </summary>
-                <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-white/5 bg-[#0a0e1a] p-2 text-xs text-gray-300 scrollbar-thin">
+                <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-xr-border bg-xr-surface p-2 text-xs text-xr-secondary scrollbar-thin">
                   {uploadResult.orders.slice(0, 10).map((order, index) => (
-                    <div key={index} className="border-b border-white/5 py-1 text-xs last:border-0">
-                      <span className="font-medium text-white">{order.customer_name}</span>
-                      <span className="text-gray-500"> — {order.delivery_address} ({order.postcode})</span>
+                    <div key={index} className="border-b border-xr-border py-1 text-xs last:border-0">
+                      <span className="font-medium text-xr-text">{order.customer_name}</span>
+                      <span className="text-xr-muted"> — {order.delivery_address} ({order.postcode})</span>
                     </div>
                   ))}
                   {uploadResult.orders.length > 10 && (
-                    <p className="pt-1 text-[11px] text-gray-500">…and {uploadResult.orders.length - 10} more</p>
+                    <p className="pt-1 text-[11px] text-xr-muted">…and {uploadResult.orders.length - 10} more</p>
                   )}
                 </div>
               </details>
@@ -288,11 +288,11 @@ const PDFUpload = ({ onOrdersUploaded }) => {
             <p className="mt-1 text-amber-200/80">Extracted: {uploadResult.extractedOrders.length} orders</p>
             <details className="mt-2 cursor-pointer">
               <summary className="text-xs font-medium text-amber-200">View extracted</summary>
-              <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-white/5 bg-[#0a0e1a] p-2 text-gray-300 scrollbar-thin">
+              <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-xr-border bg-xr-surface p-2 text-xr-secondary scrollbar-thin">
                 {uploadResult.extractedOrders.slice(0, 10).map((order, index) => (
-                  <div key={index} className="border-b border-white/5 py-1 text-xs last:border-0">
-                    <span className="font-medium text-white">{order.customer_name}</span>
-                    <span className="text-gray-500"> — {order.delivery_address}</span>
+                  <div key={index} className="border-b border-xr-border py-1 text-xs last:border-0">
+                    <span className="font-medium text-xr-text">{order.customer_name}</span>
+                    <span className="text-xr-muted"> — {order.delivery_address}</span>
                   </div>
                 ))}
               </div>
@@ -304,10 +304,10 @@ const PDFUpload = ({ onOrdersUploaded }) => {
         </div>
       )}
 
-      <div className="border-t border-white/5 bg-[#0a0e1a]/50 px-4 py-3 sm:px-5">
+      <div className="border-t border-xr-border bg-xr-surface px-4 py-3 sm:px-5">
         <div className="flex gap-2">
-          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
-          <ul className="list-inside list-disc space-y-0.5 text-[11px] text-gray-500 sm:text-xs">
+          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-xr-muted" />
+          <ul className="list-inside list-disc space-y-0.5 text-[11px] text-xr-muted sm:text-xs">
             <li>Use text-based PDFs (not scanned images) for best results</li>
             <li>Include names, full addresses, postcodes, and values where possible</li>
           </ul>

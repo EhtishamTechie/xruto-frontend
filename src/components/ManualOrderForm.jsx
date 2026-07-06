@@ -116,10 +116,10 @@ ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
 
   return (
     <div className="glass-card min-w-0 overflow-hidden rounded-2xl">
-      <div className="border-b border-white/5 px-4 py-3 sm:px-5 sm:py-3.5">
+      <div className="border-b border-xr-border px-4 py-3 sm:px-5 sm:py-3.5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#F59E0B]/80">Manual Entry</p>
-        <h3 className="text-sm font-semibold text-white sm:text-base">Add Single Order</h3>
-        <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">
+        <h3 className="text-sm font-semibold text-xr-text sm:text-base">Add Single Order</h3>
+        <p className="mt-0.5 text-xs text-xr-muted sm:text-sm">
           Enter order details below. We'll automatically fetch the exact coordinates if you provide a Maps link.
         </p>
       </div>
@@ -127,57 +127,57 @@ ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
       <form onSubmit={handleAddOrderToList} className="p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-400">Customer Name *</label>
+            <label className="mb-1.5 block text-xs font-medium text-xr-muted">Customer Name *</label>
             <input
               type="text"
               name="customer_name"
               value={formData.customer_name}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
+              className="w-full rounded-xl border border-xr-border bg-xr-overlay px-3 py-2 text-sm text-xr-text placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
               placeholder="e.g. John Doe"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-400">Phone Number</label>
+            <label className="mb-1.5 block text-xs font-medium text-xr-muted">Phone Number</label>
             <input
               type="tel"
               name="customer_phone"
               value={formData.customer_phone}
               onChange={handleChange}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
+              className="w-full rounded-xl border border-xr-border bg-xr-overlay px-3 py-2 text-sm text-xr-text placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
               placeholder="e.g. 0300-1234567"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-400">Delivery Address *</label>
+          <label className="mb-1.5 block text-xs font-medium text-xr-muted">Delivery Address *</label>
           <input
             type="text"
             name="delivery_address"
             value={formData.delivery_address}
             onChange={handleChange}
             required
-            className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
+            className="w-full rounded-xl border border-xr-border bg-xr-overlay px-3 py-2 text-sm text-xr-text placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
             placeholder="e.g. F-7 Markaz, Jinnah Super"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-400">City / Area</label>
+          <label className="mb-1.5 block text-xs font-medium text-xr-muted">City / Area</label>
           <input
             type="text"
             name="city"
             value={formData.city}
             onChange={handleChange}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
+            className="w-full rounded-xl border border-xr-border bg-xr-overlay px-3 py-2 text-sm text-xr-text placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
             placeholder="e.g. Islamabad"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-gray-400">
+          <label className="mb-1.5 flex items-center gap-2 text-xs font-medium text-xr-muted">
             <MapPin className="h-3.5 w-3.5 text-[#F59E0B]" />
             Google Maps Link (Optional)
           </label>
@@ -186,7 +186,7 @@ ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
             name="google_maps_url"
             value={formData.google_maps_url}
             onChange={handleChange}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
+            className="w-full rounded-xl border border-xr-border bg-xr-overlay px-3 py-2 text-sm text-xr-text placeholder-gray-600 focus:border-[#F59E0B]/40 focus:outline-none focus:ring-1 focus:ring-[#F59E0B]/40"
             placeholder="e.g. https://maps.app.goo.gl/..."
           />
           <div className="mt-1 space-y-1">
@@ -205,29 +205,29 @@ ${order.google_maps_url ? `Link: ${order.google_maps_url}` : ''}`).join('\n\n');
                 ✓ Coordinates: {formData.latitude}, {formData.longitude}
               </p>
             )}
-            <p className="text-[10px] text-gray-500">Paste a Maps link from WhatsApp to instantly locate the exact pin.</p>
+            <p className="text-[10px] text-xr-muted">Paste a Maps link from WhatsApp to instantly locate the exact pin.</p>
           </div>
         </div>
 
         <button
           type="submit"
-          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 font-medium text-white transition hover:bg-white/10"
+          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-xr-border bg-xr-overlay px-4 font-medium text-xr-text transition hover:bg-xr-overlay-hover"
         >
           Add to List
         </button>
       </form>
 
       {pendingOrders.length > 0 && (
-        <div className="border-t border-white/5 bg-white/[0.01] p-4 sm:p-5">
-          <h4 className="mb-3 text-sm font-semibold text-white">Pending Orders ({pendingOrders.length})</h4>
+        <div className="border-t border-xr-border bg-white/[0.01] p-4 sm:p-5">
+          <h4 className="mb-3 text-sm font-semibold text-xr-text">Pending Orders ({pendingOrders.length})</h4>
           <ul className="mb-4 space-y-2 max-h-48 overflow-y-auto">
             {pendingOrders.map((order, i) => (
-              <li key={i} className="flex items-start justify-between rounded-lg border border-white/10 bg-white/[0.02] p-3 text-xs">
+              <li key={i} className="flex items-start justify-between rounded-lg border border-xr-border bg-xr-overlay p-3 text-xs">
                 <div className="min-w-0 pr-4">
-                  <p className="font-medium text-gray-200 truncate">{order.customer_name}</p>
-                  <p className="mt-0.5 text-gray-500 truncate">{order.delivery_address}</p>
+                  <p className="font-medium text-xr-secondary truncate">{order.customer_name}</p>
+                  <p className="mt-0.5 text-xr-muted truncate">{order.delivery_address}</p>
                 </div>
-                <button type="button" onClick={() => handleRemoveOrder(i)} className="text-gray-500 hover:text-red-400">
+                <button type="button" onClick={() => handleRemoveOrder(i)} className="text-xr-muted hover:text-red-400">
                   <X className="h-4 w-4" />
                 </button>
               </li>

@@ -17,6 +17,8 @@
     --xr-success: #22C55E;
     --xr-danger: #EF4444;
     --xr-info: #3B82F6;
+    --xr-overlay: rgba(0,0,0,0.03);
+    --xr-overlay-hover: rgba(0,0,0,0.06);
   }
 
   .dark {
@@ -33,6 +35,8 @@
     --xr-success: #22C55E;
     --xr-danger: #F87171;
     --xr-info: #60A5FA;
+    --xr-overlay: rgba(255,255,255,0.03);
+    --xr-overlay-hover: rgba(255,255,255,0.06);
   }
 
   html {

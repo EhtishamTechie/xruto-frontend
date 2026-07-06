@@ -103,8 +103,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
   return (
     <div className="space-y-4">
       <UiCard variant="glass" className="overflow-hidden p-0">
-        <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3 sm:px-6 sm:py-4">
-          <h3 className="text-sm font-semibold tracking-tight text-white sm:text-base">Volume &amp; load</h3>
+        <div className="border-b border-xr-border bg-xr-overlay px-4 py-3 sm:px-6 sm:py-4">
+          <h3 className="text-sm font-semibold tracking-tight text-xr-text sm:text-base">Volume &amp; load</h3>
           <p className="mt-0.5 text-xs text-xr-muted sm:text-sm">Delivered stops vs active routes by day (grouped)</p>
         </div>
         <div className="relative p-2 sm:p-4" onMouseLeave={onLeave}>
@@ -129,8 +129,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
               const y = PAD.t + PLOT.h * (1 - tv / maxPrimary);
               return (
                 <g key={`g-${tv}`}>
-                  <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                  <text x={PAD.l - 8} y={y + 3} textAnchor="end" className="fill-white/35 text-[10px] font-medium">
+                  <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="var(--xr-border)" strokeWidth="1" />
+                  <text x={PAD.l - 8} y={y + 3} textAnchor="end" className="fill-current text-xr-muted opacity-60 text-[10px] font-medium">
                     {Number.isInteger(tv) ? tv : tv.toFixed(1)}
                   </text>
                 </g>
@@ -184,7 +184,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
                   x={x}
                   y={H - 16}
                   textAnchor="middle"
-                  className="fill-white/40 text-[9px] sm:text-[10px]"
+                  className="fill-current text-xr-muted opacity-60 text-[9px] sm:text-[10px]"
                 >
                   {row.date}
                 </text>
@@ -205,7 +205,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
           </svg>
           {hover && (
             <div
-              className="pointer-events-none absolute z-20 rounded-control border border-white/15 bg-xr-surface/95 px-3 py-2 text-xs text-white shadow-lg backdrop-blur-sm"
+              className="pointer-events-none absolute z-20 rounded-control border border-xr-border bg-xr-surface/95 px-3 py-2 text-xs text-xr-text shadow-lg backdrop-blur-sm"
               style={{
                 left: `clamp(4px, ${(hover.x / W) * 100}%, calc(100% - 120px))`,
                 top: 8,
@@ -219,7 +219,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-4 border-t border-white/10 px-4 py-3 text-xs sm:px-6">
+        <div className="flex flex-wrap gap-4 border-t border-xr-border px-4 py-3 text-xs sm:px-6">
           <span className="inline-flex items-center gap-2 text-xr-muted">
             <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-amber-700 to-amber-300" />
             Delivered
@@ -233,8 +233,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
 
       <div className="grid gap-4 lg:grid-cols-5">
         <UiCard variant="glass" className="p-0 lg:col-span-3">
-          <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3 sm:px-5 sm:py-3.5">
-            <h3 className="text-sm font-semibold text-white">Delivery rate trend</h3>
+          <div className="border-b border-xr-border bg-xr-overlay px-4 py-3 sm:px-5 sm:py-3.5">
+            <h3 className="text-sm font-semibold text-xr-text">Delivery rate trend</h3>
             <p className="mt-0.5 text-xs text-xr-muted">Area + line (0–100%) · mean {meanRate.toFixed(1)}%</p>
           </div>
           <div className="p-2 sm:p-4">
@@ -255,8 +255,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
                 const y = PAD.t + PLOT.h * (1 - tv / 100);
                 return (
                   <g key={`r-${tv}`}>
-                    <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="rgba(255,255,255,0.05)" />
-                    <text x={PAD.l - 6} y={y + 3} textAnchor="end" className="fill-white/30 text-[10px]">
+                    <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="var(--xr-border)" />
+                    <text x={PAD.l - 6} y={y + 3} textAnchor="end" className="fill-current text-xr-muted opacity-50 text-[10px]">
                       {tv}%
                     </text>
                   </g>
@@ -289,7 +289,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
               {series.map((row, i) => {
                 const x = n <= 1 ? PAD.l + PLOT.w / 2 : PAD.l + (PLOT.w / (n - 1)) * i;
                 return (
-                  <text key={`rx-${row.date}`} x={x} y={H - 12} textAnchor="middle" className="fill-white/35 text-[9px]">
+                  <text key={`rx-${row.date}`} x={x} y={H - 12} textAnchor="middle" className="fill-current text-xr-muted opacity-60 text-[9px]">
                     {row.date}
                   </text>
                 );
@@ -299,8 +299,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
         </UiCard>
 
         <UiCard variant="glass" className="flex flex-col p-0 lg:col-span-2">
-          <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3 sm:px-5">
-            <h3 className="text-sm font-semibold text-white">Service level</h3>
+          <div className="border-b border-xr-border bg-xr-overlay px-4 py-3 sm:px-5">
+            <h3 className="text-sm font-semibold text-xr-text">Service level</h3>
             <p className="mt-0.5 text-xs text-xr-muted">Snapshot delivery success</p>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-6">
@@ -311,7 +311,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
                   <stop offset="100%" stopColor="#fbbf24" />
                 </linearGradient>
               </defs>
-              <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="16" />
+              <circle cx="100" cy="100" r="70" fill="none" stroke="var(--xr-border)" strokeWidth="16" />
               {(() => {
                 const r = 70;
                 const c = 2 * Math.PI * r;
@@ -331,10 +331,10 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
                   />
                 );
               })()}
-              <text x="100" y="96" textAnchor="middle" className="fill-white text-2xl font-bold tabular-nums">
+              <text x="100" y="96" textAnchor="middle" className="fill-current text-xr-text text-2xl font-bold tabular-nums">
                 {deliveryRate}%
               </text>
-              <text x="100" y="116" textAnchor="middle" className="fill-white/40 text-[10px] font-medium">
+              <text x="100" y="116" textAnchor="middle" className="fill-current text-xr-muted opacity-60 text-[10px] font-medium">
                 on-time rate
               </text>
             </svg>
@@ -344,8 +344,8 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
       </div>
 
       <UiCard variant="glass" className="p-0">
-        <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3 sm:px-6 sm:py-4">
-          <h3 className="text-sm font-semibold text-white sm:text-base">Route pipeline</h3>
+        <div className="border-b border-xr-border bg-xr-overlay px-4 py-3 sm:px-6 sm:py-4">
+          <h3 className="text-sm font-semibold text-xr-text sm:text-base">Route pipeline</h3>
           <p className="mt-0.5 text-xs text-xr-muted sm:text-sm">Distribution across operational states (latest)</p>
         </div>
         <div className="grid gap-6 p-4 sm:grid-cols-2 sm:gap-8 sm:p-6">
@@ -357,7 +357,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
               role="img"
               aria-label="Stacked status bar"
             >
-              <rect x="0" y="36" width="520" height="32" rx="8" fill="rgba(255,255,255,0.05)" />
+              <rect x="0" y="36" width="520" height="32" rx="8" fill="var(--xr-border)" />
               {statusSeg.t > 0 && (
                 <>
                   {statusSeg.disp > 0 && (
@@ -391,13 +391,13 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
                   )}
                 </>
               )}
-              <text x="0" y="20" className="fill-white/50 text-[11px] font-medium">
+              <text x="0" y="20" className="fill-current text-xr-muted opacity-70 text-[11px] font-medium">
                 0
               </text>
-              <text x="260" y="20" textAnchor="middle" className="fill-white/40 text-[10px]">
+              <text x="260" y="20" textAnchor="middle" className="fill-current text-xr-muted opacity-60 text-[10px]">
                 {statusSeg.t} routes
               </text>
-              <text x="520" y="20" textAnchor="end" className="fill-white/50 text-[11px]">
+              <text x="520" y="20" textAnchor="end" className="fill-current text-xr-muted opacity-70 text-[11px]">
                 {statusSeg.t}
               </text>
             </svg>
@@ -409,7 +409,7 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
               ].map((row) => (
                 <div
                   key={row.t}
-                  className="rounded-control border border-white/10 bg-white/[0.03] px-2 py-3"
+                  className="rounded-control border border-xr-border bg-xr-overlay px-2 py-3"
                 >
                   <div className={`mx-auto mb-1.5 h-1.5 w-1.5 rounded-full ${row.b}`} />
                   <div className="text-[10px] text-xr-muted">{row.t}</div>
@@ -422,10 +422,10 @@ export function AnalyticsCharts({ series, deliveryRate, snapshot }) {
             <div className="flex flex-col justify-center">
               <div className="text-xs font-medium text-xr-muted">Avg route time (estimate)</div>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-3xl font-bold tabular-nums text-white">{snapshot.avgRouteMinutes}</span>
+                <span className="text-3xl font-bold tabular-nums text-xr-text">{snapshot.avgRouteMinutes}</span>
                 <span className="text-sm text-xr-muted">min</span>
               </div>
-              <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="mt-3 h-3 overflow-hidden rounded-full bg-xr-overlay-hover">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-amber-700/90 to-amber-400/90"
                   style={{ width: `${Math.min(100, (snapshot.avgRouteMinutes / 90) * 100)}%` }}

@@ -110,7 +110,7 @@ const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
-            <span className="text-base font-semibold text-white">Zone {zoneLetter}</span>
+            <span className="text-base font-semibold text-xr-text">Zone {zoneLetter}</span>
             <span className="text-xs text-xr-muted">Delivery route</span>
           </div>
           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>{statusLabel}</span>
@@ -128,7 +128,7 @@ const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+        <div className="flex items-center justify-between text-xs text-xr-muted mb-3">
           <span className="flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             {fmtDuration(route.estimated_duration_minutes)}
@@ -178,13 +178,13 @@ const ZoneCard = ({ route, index, onNavigate, onOrderNav, onOrderStatus }) => {
               <div key={order.id || idx} className={`flex items-center gap-3 p-3 rounded-xl ${isDone ? 'bg-xr-panel/60' : 'bg-xr-panel'} border border-xr-line`}>
                 <div
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                    isDone ? 'bg-white/[0.06] text-emerald-300' : 'bg-white/[0.06] text-xr-secondary'
+                    isDone ? 'bg-xr-overlay-hover text-emerald-300' : 'bg-xr-overlay-hover text-xr-secondary'
                   }`}
                 >
                   {isDone ? '\u2713' : idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isDone ? 'text-xr-subtle line-through' : 'text-white'}`}>{order.customer_name}</p>
+                  <p className={`text-sm font-medium ${isDone ? 'text-xr-subtle line-through' : 'text-xr-text'}`}>{order.customer_name}</p>
                   <p className="text-xs text-xr-subtle truncate">{order.delivery_address}</p>
                 </div>
                 <div className="shrink-0 flex flex-wrap items-center justify-end gap-1.5">
@@ -364,7 +364,7 @@ const DriverRoutes = () => {
         <div className="w-14 h-14 rounded-2xl bg-red-500/15 flex items-center justify-center">
           <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
-        <p className="text-white font-semibold">Failed to Load Routes</p>
+        <p className="text-xr-text font-semibold">Failed to Load Routes</p>
         <p className="text-sm text-xr-subtle">{error}</p>
         <Button variant="primary" onClick={loadRoutes}>Try Again</Button>
       </div>
@@ -402,7 +402,7 @@ const DriverRoutes = () => {
         {totalOrders > 0 && (
           <div className="bg-xr-panel border border-xr-line rounded-2xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300 font-medium">Today's Progress</span>
+              <span className="text-sm text-xr-secondary font-medium">Today's Progress</span>
               <span className="text-sm font-bold text-amber-200">{overallPct}%</span>
             </div>
             <div className="h-2 bg-xr-bg rounded-full overflow-hidden">

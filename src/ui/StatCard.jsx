@@ -16,7 +16,7 @@ export function StatCard({ icon, label, value, hint, trend, tone = 'neutral', cl
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {icon && (
-            <div className="flex h-9 w-9 items-center justify-center rounded-control border border-white/10 bg-white/[0.03] text-xr-secondary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-control border border-xr-border bg-xr-overlay text-xr-secondary">
               {icon}
             </div>
           )}
@@ -26,7 +26,7 @@ export function StatCard({ icon, label, value, hint, trend, tone = 'neutral', cl
           </div>
         </div>
         {trend && (
-          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] font-semibold text-xr-secondary">
+          <span className="rounded-full border border-xr-border bg-xr-overlay px-2 py-1 text-[11px] font-semibold text-xr-secondary">
             {trend}
           </span>
         )}

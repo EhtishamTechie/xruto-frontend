@@ -38,7 +38,7 @@ const Radio = ({ checked, onChange, disabled, label, sublabel }) => (
     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${checked ? 'border-xr-brand' : 'border-gray-600'}`}>
       {checked && <div className="w-2.5 h-2.5 bg-xr-brand rounded-full" />}
     </div>
-    <div><p className="text-sm font-medium text-white">{label}</p>{sublabel && <p className="text-xs text-gray-500">{sublabel}</p>}</div>
+    <div><p className="text-sm font-medium text-xr-text">{label}</p>{sublabel && <p className="text-xs text-xr-muted">{sublabel}</p>}</div>
   </div>
 );
 
@@ -46,15 +46,15 @@ const Stepper = ({ label, value, onChange, disabled, helpText, min = 1, max = 10
   <div className="bg-xr-bg border border-xr-line rounded-xl p-4">
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-1.5">
-        <span className="text-sm text-gray-300">{label}</span>
+        <span className="text-sm text-xr-secondary">{label}</span>
         {helpText && <Ico d={ICON.info} className="w-3.5 h-3.5 text-gray-600" />}
       </div>
       <div className="flex items-center gap-2 bg-xr-panel rounded-lg p-0.5">
         <button onClick={() => !disabled && onChange(Math.max(min, value - 1))} disabled={disabled || value <= min}
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-white transition hover:bg-xr-line disabled:opacity-30">-</button>
-        <span className="w-8 text-center text-sm font-bold text-white">{value}</span>
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-xr-text transition hover:bg-xr-line disabled:opacity-30">-</button>
+        <span className="w-8 text-center text-sm font-bold text-xr-text">{value}</span>
         <button onClick={() => !disabled && onChange(Math.min(max, value + 1))} disabled={disabled || value >= max}
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-white transition hover:bg-xr-line disabled:opacity-30">+</button>
+          className="flex h-8 w-8 items-center justify-center rounded-md bg-xr-elevated text-lg text-xr-text transition hover:bg-xr-line disabled:opacity-30">+</button>
       </div>
     </div>
   </div>
@@ -131,7 +131,7 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
       <div
         ref={portalRef}
         role="listbox"
-        className="overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl scrollbar-thin ring-1 ring-black/40 touch-pan-y"
+        className="overflow-y-auto overflow-x-hidden overscroll-contain rounded-xl border border-xr-border bg-xr-elevated py-1 shadow-2xl scrollbar-thin ring-1 ring-black/40 touch-pan-y"
         style={{
           position: 'fixed',
           top: menuPos.top,
@@ -149,14 +149,14 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
             key={opt.value}
             type="button"
             role="option"
-            className="flex w-full cursor-pointer px-4 py-2.5 text-left text-sm text-white transition hover:bg-xr-surface"
+            className="flex w-full cursor-pointer px-4 py-2.5 text-left text-sm text-xr-text transition hover:bg-xr-surface"
             onClick={() => {
               onChange(opt.value);
               setOpen(false);
             }}
           >
             {opt.label}
-            {opt.sub && <span className="ml-2 text-xs text-gray-500">{opt.sub}</span>}
+            {opt.sub && <span className="ml-2 text-xs text-xr-muted">{opt.sub}</span>}
           </button>
         ))}
       </div>,
@@ -173,16 +173,16 @@ const Dropdown = ({ value, options, onChange, disabled, placeholder }) => {
         onClick={() => !disabled && setOpen((v) => !v)}
         className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-xr-line bg-xr-bg px-4 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <span className="text-sm text-gray-300">{selected?.label || placeholder}</span>
-        <Ico d={ICON.chevDown} className={`h-4 w-4 shrink-0 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="text-sm text-xr-secondary">{selected?.label || placeholder}</span>
+        <Ico d={ICON.chevDown} className={`h-4 w-4 shrink-0 text-xr-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {menu}
     </div>
   );
 };
 
-const inputCls = 'w-full bg-xr-bg border border-xr-line rounded-xl px-4 py-3 text-white text-sm placeholder-xr-subtle focus:outline-none focus:border-xr-brand/50 transition';
-const depotInputCls = `${inputCls} min-h-[46px] pr-10 text-white focus:border-xr-brand/50`;
+const inputCls = 'w-full bg-xr-bg border border-xr-line rounded-xl px-4 py-3 text-xr-text text-sm placeholder-xr-subtle focus:outline-none focus:border-xr-brand/50 transition';
+const depotInputCls = `${inputCls} min-h-[46px] pr-10 text-xr-text focus:border-xr-brand/50`;
 
 /**
  * Searchable depot field (add + edit driver): type prefix e.g. "F" to jump to the first depot whose
@@ -267,7 +267,7 @@ const DepotCombobox = ({ depots, value, onChange, disabled, noDepotLabel = 'No d
       <ul
         ref={listRef}
         role="listbox"
-        className="overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-xr-elevated py-1 shadow-2xl ring-1 ring-black/40"
+        className="overflow-y-auto overscroll-contain rounded-xl border border-xr-border bg-xr-elevated py-1 shadow-2xl ring-1 ring-black/40"
         style={{
           position: 'fixed',
           zIndex: 20000,
@@ -293,7 +293,7 @@ const DepotCombobox = ({ depots, value, onChange, disabled, noDepotLabel = 'No d
           <li
             key={String(d.id)}
             role="option"
-            className={`cursor-pointer px-4 py-2.5 text-left text-sm text-white transition hover:bg-xr-surface ${
+            className={`cursor-pointer px-4 py-2.5 text-left text-sm text-xr-text transition hover:bg-xr-surface ${
               String(value) === String(d.id) ? 'bg-xr-surface/80' : ''
             }`}
             onMouseDown={(e) => e.preventDefault()}
@@ -352,7 +352,7 @@ const DepotCombobox = ({ depots, value, onChange, disabled, noDepotLabel = 'No d
         />
         <button
           type="button"
-          className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-gray-500"
+          className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-xr-muted"
           tabIndex={-1}
           disabled={disabled}
           onClick={() => {
@@ -374,9 +374,9 @@ const DepotCombobox = ({ depots, value, onChange, disabled, noDepotLabel = 'No d
 const SectionCard = ({ title, subtitle, children, className = '' }) => (
   <Card variant="glass" className={`p-5 sm:p-6 ${className}`}>
     {(title || subtitle) && (
-      <header className="mb-4 border-b border-white/5 pb-3 sm:mb-5 sm:pb-4">
-        {title && <h2 className="text-sm font-semibold tracking-tight text-white sm:text-base">{title}</h2>}
-        {subtitle && <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">{subtitle}</p>}
+      <header className="mb-4 border-b border-xr-border pb-3 sm:mb-5 sm:pb-4">
+        {title && <h2 className="text-sm font-semibold tracking-tight text-xr-text sm:text-base">{title}</h2>}
+        {subtitle && <p className="mt-0.5 text-xs text-xr-muted sm:text-sm">{subtitle}</p>}
       </header>
     )}
     {children}
@@ -555,7 +555,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       <div className="flex justify-between items-center"><span className="text-sm font-medium text-blue-400">Editing Depot</span>
         <div className="flex gap-2">
           <button onClick={handleSaveDepotEdit} className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-lg">Save</button>
-          <button onClick={() => { setEditingDepot(null); setEditDepotData({}); }} className="text-xs text-gray-400 bg-gray-500/10 px-3 py-1.5 rounded-lg">Cancel</button>
+          <button onClick={() => { setEditingDepot(null); setEditDepotData({}); }} className="text-xs text-xr-muted bg-gray-500/10 px-3 py-1.5 rounded-lg">Cancel</button>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -606,10 +606,10 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       </div>
     </div>
   ) : (
-    <div className="flex items-start justify-between rounded-card border border-white/10 bg-xr-bg/70 p-4">
+    <div className="flex items-start justify-between rounded-card border border-xr-border bg-xr-bg/70 p-4">
       <div>
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-sm font-medium text-white">{depot.name}</span>
+          <span className="text-sm font-medium text-xr-text">{depot.name}</span>
           {depot.is_primary && <span className="rounded-full bg-xr-brand/15 px-2 py-0.5 text-[10px] text-amber-200">Primary</span>}
         </div>
         <p className="text-xs text-xr-muted">{depot.address}</p>
@@ -628,7 +628,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       <div className="flex justify-between items-center"><span className="text-sm font-medium text-blue-400">Editing Driver</span>
         <div className="flex gap-2">
           <button onClick={handleSaveDriverEdit} className="text-xs text-green-400 bg-green-500/10 px-3 py-1.5 rounded-lg">Save</button>
-          <button onClick={() => { setEditingDriver(null); setEditDriverData({}); }} className="text-xs text-gray-400 bg-gray-500/10 px-3 py-1.5 rounded-lg">Cancel</button>
+          <button onClick={() => { setEditingDriver(null); setEditDriverData({}); }} className="text-xs text-xr-muted bg-gray-500/10 px-3 py-1.5 rounded-lg">Cancel</button>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -655,9 +655,9 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       </div>
     </div>
   ) : (
-    <div className="flex items-start justify-between rounded-card border border-white/10 bg-xr-bg/70 p-4">
+    <div className="flex items-start justify-between rounded-card border border-xr-border bg-xr-bg/70 p-4">
       <div>
-        <span className="text-sm font-medium text-white">{driver.name || `${driver.first_name || ''} ${driver.last_name || ''}`}</span>
+        <span className="text-sm font-medium text-xr-text">{driver.name || `${driver.first_name || ''} ${driver.last_name || ''}`}</span>
         <p className="mt-0.5 text-xs text-xr-muted">{driver.email}</p>
         <p className="mt-0.5 text-xs text-xr-subtle">{String(driver.details || '').trim() || (driver.depot_name ? `${driver.depot_name} · ${driver.mpg || 30} MPG` : '—')}</p>
       </div>
@@ -682,7 +682,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-xr-brand/10 blur-3xl" />
         <div className="relative mx-auto max-w-section">
           <p className="text-caption font-medium uppercase tracking-wider text-xr-brand">Control center</p>
-          <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight text-white sm:text-display sm:leading-[1.1]">
+          <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight text-xr-text sm:text-display sm:leading-[1.1]">
             Run operations from one place
           </h1>
           <p className="mt-3 max-w-readable text-sm text-xr-muted sm:text-body">
@@ -703,7 +703,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
       <Card variant="soft" className="p-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           {/* Segmented tabs */}
-          <div className="inline-flex w-full overflow-x-auto rounded-control border border-white/10 bg-white/[0.03] p-1 md:w-auto">
+          <div className="inline-flex w-full overflow-x-auto rounded-control border border-xr-border bg-xr-overlay p-1 md:w-auto">
             {adminTabs.map((tab) => {
               const active = activeSection === tab.id;
               return (
@@ -715,7 +715,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                   onClick={() => setActiveSection(tab.id)}
                   className={`whitespace-nowrap rounded-control px-4 py-2 text-sm font-medium transition ${
                     active
-                      ? 'bg-white/[0.06] text-white ring-1 ring-inset ring-xr-brand/20'
+                      ? 'bg-xr-overlay-hover text-xr-text ring-1 ring-inset ring-xr-brand/40'
                       : 'text-xr-secondary hover:text-xr-text'
                   }`}
                 >
@@ -727,7 +727,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
 
           {/* Status + actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-control border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-xr-secondary">
+            <span className="inline-flex items-center gap-2 rounded-control border border-xr-border bg-xr-overlay px-3 py-2 text-xs text-xr-secondary">
               <span className={`h-1.5 w-1.5 rounded-full ${saving ? 'animate-pulse bg-amber-300' : 'bg-emerald-300'}`} aria-hidden />
               {saving ? 'Saving…' : syncFlash ? 'Synced' : 'In sync'}
             </span>
@@ -737,7 +737,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
               className={`rounded-control border px-3 py-2 text-xs font-semibold transition ${
                 helpEnabled
                   ? 'border-xr-brand/25 bg-xr-brand/10 text-amber-200'
-                  : 'border-white/10 bg-white/[0.03] text-xr-secondary hover:bg-white/[0.06]'
+                  : 'border-xr-border bg-xr-overlay text-xr-secondary hover:bg-xr-overlay-hover'
               }`}
             >
               {helpEnabled ? 'Hide tips' : 'Show tips'}
@@ -792,16 +792,16 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                 <div className="lg:col-span-2">
                   <SectionCard title="At a glance" subtitle="Key operational switches">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex items-center justify-between gap-3 rounded-card border border-xr-border bg-xr-overlay p-4">
                         <div>
-                          <p className="text-xs font-medium text-gray-400">Auto-assign routes</p>
+                          <p className="text-xs font-medium text-xr-muted">Auto-assign routes</p>
                           <p className="text-[11px] text-gray-600">Distribute work automatically when possible</p>
                         </div>
                         <Toggle checked={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
                       </div>
-                      <div className="flex items-center justify-between gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4">
+                      <div className="flex items-center justify-between gap-3 rounded-card border border-xr-border bg-xr-overlay p-4">
                         <div>
-                          <p className="text-xs font-medium text-gray-400">Stock refill logic</p>
+                          <p className="text-xs font-medium text-xr-muted">Stock refill logic</p>
                           <p className="text-[11px] text-gray-600">Enable depot return handling</p>
                         </div>
                         <Toggle checked={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
@@ -810,7 +810,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                   </SectionCard>
                 </div>
                 <SectionCard title="Next steps" subtitle="Work faster in this workspace">
-                  <ol className="list-inside list-decimal space-y-2.5 text-sm text-gray-400">
+                  <ol className="list-inside list-decimal space-y-2.5 text-sm text-xr-muted">
                     <li>Fine-tune <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('operations')}>operations</button> and fuel assumptions.</li>
                     <li>Keep <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('fleet')}>depots and drivers</button> up to date.</li>
                     <li>Connect channels under <button type="button" className="text-orange-400 hover:underline" onClick={() => setActiveSection('integrations')}>integrations</button>.</li>
@@ -824,8 +824,8 @@ const MyAdmin = ({ onNavigateToOrders }) => {
             <div className="grid gap-5 xl:grid-cols-2">
               <SectionCard title="Routing & capacity" subtitle="How routes are built and limited">
                 <div className="space-y-3">
-                  <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
-                    <span className="text-sm font-medium text-gray-300">Preferred navigation app</span>
+                  <div className="rounded-card border border-xr-border bg-xr-overlay p-4">
+                    <span className="text-sm font-medium text-xr-secondary">Preferred navigation app</span>
                     {helpEnabled && <p className="mb-2 mt-1 text-xs text-orange-400/80">Google Maps supports 25 stops, HERE Maps supports 50 stops per route</p>}
                     <div className="mt-2 space-y-2">
                       <Radio label="Google Maps" sublabel="25 Stops Per Route" checked={settings.navigation_app_preference === 'google'} onChange={() => handleSettingChange('navigation_app_preference', 'google')} disabled={saving} />
@@ -839,8 +839,8 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                     disabled={saving}
                     helpText={settings.enable_stock_refill ? "Drivers return to depot for refill if route exceeds this." : "Hard limit per vehicle"}
                   />
-                  <div className="flex items-center justify-between border-t border-white/5 pt-2">
-                    <span className="text-sm text-gray-300">Auto-assign routes</span>
+                  <div className="flex items-center justify-between border-t border-xr-border pt-2">
+                    <span className="text-sm text-xr-secondary">Auto-assign routes</span>
                     <Toggle checked={settings.auto_assign_routes || false} onChange={v => handleSettingChange('auto_assign_routes', v)} disabled={saving} />
                   </div>
                 </div>
@@ -849,16 +849,16 @@ const MyAdmin = ({ onNavigateToOrders }) => {
               <div className="space-y-5">
                 <SectionCard title="Fuel & cost" subtitle="Model spend for smarter optimisation">
                   <div>
-                    <label className="mb-1.5 block text-xs text-gray-500">Fuel price per litre</label>
-                    <div className="flex items-center rounded-xl border border-[#1a2a45] bg-[#0a0e1a] px-4 py-3">
-                      <span className="mr-2 font-bold text-gray-500">&pound;</span>
+                    <label className="mb-1.5 block text-xs text-xr-muted">Fuel price per litre</label>
+                    <div className="flex items-center rounded-xl border border-xr-border bg-xr-surface px-4 py-3">
+                      <span className="mr-2 font-bold text-xr-muted">&pound;</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         value={settings.default_fuel_price || '1.45'}
                         onChange={e => handleSettingChange('default_fuel_price', e.target.value)}
-                        className="w-full bg-transparent text-sm text-white focus:outline-none"
+                        className="w-full bg-transparent text-sm text-xr-text focus:outline-none"
                         disabled={saving}
                       />
                     </div>
@@ -876,11 +876,11 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                 </SectionCard>
                 <SectionCard title="Inventory behaviour" subtitle="Refill and admin participation">
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-sm text-gray-300">Enable stock refill logic</span>
+                    <span className="text-sm text-xr-secondary">Enable stock refill logic</span>
                     <Toggle checked={settings.enable_stock_refill || false} onChange={v => handleSettingChange('enable_stock_refill', v)} disabled={saving} />
                   </div>
-                  <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-3">
-                    <span className="text-sm text-gray-300">Include admin in delivery team</span>
+                  <div className="mt-2 flex items-center justify-between border-t border-xr-border pt-3">
+                    <span className="text-sm text-xr-secondary">Include admin in delivery team</span>
                     <Toggle checked={settings.include_admin_as_driver || false} onChange={v => handleSettingChange('include_admin_as_driver', v)} disabled={saving} />
                   </div>
                 </SectionCard>
@@ -896,7 +896,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                 className="min-h-0"
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-gray-500">{depots.length} location{depots.length !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-xr-muted">{depots.length} location{depots.length !== 1 ? 's' : ''}</p>
                   <button
                     type="button"
                     onClick={() => setShowAddDepot(v => !v)}
@@ -995,7 +995,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                 className="min-h-0"
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-gray-500">{drivers.length} driver{drivers.length !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-xr-muted">{drivers.length} driver{drivers.length !== 1 ? 's' : ''}</p>
                   <button
                     type="button"
                     onClick={() => setShowAddDriver(v => !v)}
@@ -1072,7 +1072,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
               <SectionCard title="Channels & comms" subtitle="E‑commerce, tracking, and driver surfaces">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-sm text-gray-300">WooCommerce</span>
+                    <span className="text-sm text-xr-secondary">WooCommerce</span>
                     <Toggle
                       checked={settings.woocommerce_integration_enabled || false}
                       onChange={v => handleSettingChange('woocommerce_integration_enabled', v)}
@@ -1080,7 +1080,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                     />
                   </div>
                   {settings.woocommerce_integration_enabled && (
-                    <div className="space-y-3 rounded-card border border-white/10 bg-xr-bg/60 p-4">
+                    <div className="space-y-3 rounded-card border border-xr-border bg-xr-bg/60 p-4">
                       <input
                         className={inputCls}
                         type="url"
@@ -1099,12 +1099,12 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                       />
                     </div>
                   )}
-                  <div className="flex items-center justify-between border-t border-white/5 pt-2">
-                    <span className="text-sm text-gray-300">Real-time tracking</span>
+                  <div className="flex items-center justify-between border-t border-xr-border pt-2">
+                    <span className="text-sm text-xr-secondary">Real-time tracking</span>
                     <Toggle checked={settings.enable_real_time_tracking || false} onChange={v => handleSettingChange('enable_real_time_tracking', v)} disabled={saving} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300">Customer notifications</span>
+                    <span className="text-sm text-xr-secondary">Customer notifications</span>
                     <Toggle
                       checked={settings.customer_notifications !== false}
                       onChange={v => handleSettingChange('customer_notifications', v)}
@@ -1112,7 +1112,7 @@ const MyAdmin = ({ onNavigateToOrders }) => {
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300">Driver mobile app</span>
+                    <span className="text-sm text-xr-secondary">Driver mobile app</span>
                     <Toggle checked={settings.driver_app_enabled !== false} onChange={v => handleSettingChange('driver_app_enabled', v)} disabled={saving} />
                   </div>
                 </div>

@@ -23,8 +23,8 @@ export function Button({
 
   const variants = {
     primary: 'bg-xr-brand text-black hover:brightness-110 shadow-soft shadow-amber-500/10',
-    secondary: 'border border-white/10 bg-white/[0.03] text-xr-text hover:bg-white/[0.06]',
-    ghost: 'text-xr-secondary hover:bg-white/[0.05] hover:text-xr-text',
+    secondary: 'border border-xr-border bg-xr-overlay text-xr-text hover:bg-xr-overlay-hover',
+    ghost: 'text-xr-secondary hover:bg-xr-overlay hover:text-xr-text',
     danger: 'border border-xr-danger/25 bg-xr-danger/10 text-red-200 hover:bg-xr-danger/15',
   };
 
@@ -35,7 +35,7 @@ export function Button({
       className={cn(base, sizes[size] || sizes.md, variants[variant] || variants.secondary, className)}
       {...props}
     >
-      {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" aria-hidden />}
+      {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-xr-border border-t-white" aria-hidden />}
       {children}
     </button>
   );
