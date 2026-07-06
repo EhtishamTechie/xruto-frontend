@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '../../ui/cn';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
-import { ChevronLeft, ChevronRight, LayoutGrid, Package, BarChart3, Route, Settings, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, Package, BarChart3, Route, Settings, LogOut, Sun, Moon } from 'lucide-react';
 import { BrandLogo } from '../../ui/BrandLogo.jsx';
 
 const VIEW_META = {
@@ -34,6 +34,26 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
     setCollapsed((c) => {
       const next = !c;
       localStorage.setItem('xruto_nav_collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('xruto_theme');
+    if (saved) return saved === 'dark';
+    return true; // default dark
+  });
+
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      if (next) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('xruto_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('xruto_theme', 'light');
+      }
       return next;
     });
   };
@@ -164,6 +184,14 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
                   <div className="mt-1 text-h2 text-white">{meta.breadcrumb?.[1] || meta.label}</div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    className="flex h-9 w-9 items-center justify-center rounded-control border border-white/10 bg-white/[0.03] text-xr-muted transition hover:text-xr-brand hover:bg-white/[0.06]"
+                    aria-label="Toggle theme"
+                  >
+                    {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </button>
                   <Badge variant="neutral" className="hidden sm:inline-flex">
                     {user?.role === 'admin' ? 'Admin' : 'Driver'}
                   </Badge>

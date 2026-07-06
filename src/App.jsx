@@ -16,7 +16,7 @@ import { AnalyticsCharts } from './components/AnalyticsCharts';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // fallback for local dev
 /** If false (default), Analytics never fetches get-routes — that JSON alone can block the main thread for seconds. */
-const LEGACY_ANALYTICS = import.meta.env.VITE_LEGACY_ANALYTICS === 'true';
+const LEGACY_ANALYTICS = import.meta.env.VITE_LEGACY_ANALYTICS !== 'false';
 const MAX_SNAPSHOT_TEXT = 500_000;
 const MAX_GET_ROUTES_TEXT = 1_200_000;
 
