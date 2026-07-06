@@ -9,25 +9,25 @@ export default {
       colors: {
         xr: {
           // Required layered dark palette (SaaS style)
-          bg: '#0B0F17',
-          surface: '#111827',
-          elevated: '#1F2937',
-          sidebar: '#0F172A',
+          bg: 'var(--xr-bg)',
+          surface: 'var(--xr-surface)',
+          elevated: 'var(--xr-elevated)',
+          sidebar: 'var(--xr-sidebar)',
 
           // Lines / borders
-          line: '#1F2937',
-          border: 'rgba(255,255,255,0.06)',
+          line: 'var(--xr-line)',
+          border: 'var(--xr-border)',
 
           // Text
-          text: '#E5E7EB',
-          secondary: '#9CA3AF',
-          muted: '#6B7280',
+          text: 'var(--xr-text)',
+          secondary: 'var(--xr-secondary)',
+          muted: 'var(--xr-muted)',
 
           // Accent + semantic (soft)
-          brand: '#F59E0B',
-          success: '#22C55E',
-          danger: '#F87171',
-          info: '#60A5FA',
+          brand: 'var(--xr-brand)',
+          success: 'var(--xr-success)',
+          danger: 'var(--xr-danger)',
+          info: 'var(--xr-info)',
         },
       },
       fontFamily: {

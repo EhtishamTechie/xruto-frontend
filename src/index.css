@@ -3,16 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --xr-bg: #F9FAFB;
+    --xr-surface: #FFFFFF;
+    --xr-elevated: #F3F4F6;
+    --xr-sidebar: #FFFFFF;
+    --xr-line: #E5E7EB;
+    --xr-border: rgba(0,0,0,0.08);
+    --xr-text: #111827;
+    --xr-secondary: #4B5563;
+    --xr-muted: #6B7280;
+    --xr-brand: #F59E0B;
+    --xr-success: #22C55E;
+    --xr-danger: #EF4444;
+    --xr-info: #3B82F6;
+  }
+
+  .dark {
+    --xr-bg: #0B0F17;
+    --xr-surface: #111827;
+    --xr-elevated: #1F2937;
+    --xr-sidebar: #0F172A;
+    --xr-line: #1F2937;
+    --xr-border: rgba(255,255,255,0.06);
+    --xr-text: #E5E7EB;
+    --xr-secondary: #9CA3AF;
+    --xr-muted: #6B7280;
+    --xr-brand: #F59E0B;
+    --xr-success: #22C55E;
+    --xr-danger: #F87171;
+    --xr-info: #60A5FA;
+  }
+
   html {
     font-family: theme(fontFamily.sans);
   }
   body {
     @apply bg-xr-bg text-body text-xr-text antialiased;
-    /* Premium SaaS dark background (subtle, not glossy) */
+    background:
+      radial-gradient(1200px 600px at 18% 12%, rgba(245,158,11,0.04), transparent 60%),
+      radial-gradient(900px 520px at 82% 14%, rgba(96,165,250,0.04), transparent 62%),
+      linear-gradient(180deg, var(--xr-bg), #F3F4F6 60%, var(--xr-bg));
+    background-attachment: fixed;
+  }
+  .dark body {
     background:
       radial-gradient(1200px 600px at 18% 12%, rgba(245,158,11,0.10), transparent 60%),
       radial-gradient(900px 520px at 82% 14%, rgba(96,165,250,0.09), transparent 62%),
-      linear-gradient(180deg, theme(colors.xr.bg), #070A10 60%, theme(colors.xr.bg));
+      linear-gradient(180deg, var(--xr-bg), #070A10 60%, var(--xr-bg));
     background-attachment: fixed;
   }
   h1, h2, h3, h4 {
@@ -38,12 +76,15 @@
   }
 
   .glass-card {
-    /* Subtle depth (avoid glossy) */
-    background:
-      linear-gradient(180deg, rgba(17,24,39,0.78), rgba(15,23,42,0.92));
+    background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(249,250,251,0.92));
     border: 1px solid theme(colors.xr.border);
-    box-shadow: theme(boxShadow.panel);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
     backdrop-filter: blur(12px);
+  }
+
+  .dark .glass-card {
+    background: linear-gradient(180deg, rgba(17,24,39,0.78), rgba(15,23,42,0.92));
+    box-shadow: theme(boxShadow.panel);
   }
 
   .safe-area-bottom {
