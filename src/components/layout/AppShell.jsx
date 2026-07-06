@@ -146,25 +146,25 @@ export function AppShell({ currentView, onChangeView, user, onLogout, children }
                 </div>
               )}
               {!collapsed && (
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex h-9 items-center gap-2 rounded-control border border-xr-danger/25 bg-xr-danger/10 px-3 text-xs font-semibold text-red-200 transition hover:bg-xr-danger/15"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </button>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="inline-flex h-9 items-center gap-2 rounded-control border border-red-900 !bg-red-800 hover:!bg-red-900 px-3 text-xs font-bold !text-white transition shadow-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </button>
               )}
             </div>
             {collapsed && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="mt-2 inline-flex w-full items-center justify-center rounded-control border border-xr-danger/25 bg-xr-danger/10 py-2 text-xs font-semibold text-red-200 transition hover:bg-xr-danger/15"
-                title="Log out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="mt-2 inline-flex w-full items-center justify-center rounded-control border border-red-900 !bg-red-800 hover:!bg-red-900 py-2 text-xs font-bold !text-white transition shadow-sm"
+                  title="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
             )}
           </div>
         </aside>

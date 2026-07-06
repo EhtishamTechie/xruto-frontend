@@ -390,16 +390,17 @@ const Orders = ({ onNavigateBack, onNavigateToRouteDetail }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="brand">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-xr-brand opacity-30 animate-dot-pulse" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-xr-brand" />
+            <Badge variant="brand" className="!bg-blue-800 !text-white !font-bold !border-blue-900 shadow-md px-3 py-1.5 text-sm">
+              <span className="relative flex h-2 w-2 mr-1">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-60 animate-dot-pulse" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
               </span>
               {eligibleOrders.length} eligible today
             </Badge>
             <Button
               variant="danger"
               size="sm"
+              className="!bg-red-800 hover:!bg-red-900 !text-white !font-bold shadow-md px-4"
               onClick={() => setShowResetConfirm(true)}
               disabled={resetting || loading}
             >
